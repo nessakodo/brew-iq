@@ -35,7 +35,9 @@ const GamePlay = () => {
   const [showAnswer, setShowAnswer] = useState(false);
   const [leaderboard, setLeaderboard] = useState<PlayerScore[]>([]);
   const [answerCounts, setAnswerCounts] = useState({ a: 0, b: 0, c: 0, d: 0 });
-  const [leaderboardCountdown, setLeaderboardCountdown] = useState(30);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [answerRevealCountdown, setAnswerRevealCountdown] = useState(15);
+  const [leaderboardCountdown, setLeaderboardCountdown] = useState(15);
   const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
@@ -47,6 +49,9 @@ const GamePlay = () => {
     if (currentQuestionIndex < questions.length) {
       setTimeRemaining(questions[currentQuestionIndex]?.time_limit_seconds || 30);
       setShowAnswer(false);
+      setShowLeaderboard(false);
+      setAnswerRevealCountdown(15);
+      setLeaderboardCountdown(15);
       updateCurrentQuestion();
     }
   }, [currentQuestionIndex, questions]);
@@ -62,18 +67,32 @@ const GamePlay = () => {
     }
   }, [timeRemaining, showAnswer, isPaused]);
 
-  // Leaderboard countdown after showing answer
+  // Answer reveal countdown
   useEffect(() => {
-    if (showAnswer && leaderboardCountdown > 0 && !isPaused) {
+    if (showAnswer && !showLeaderboard && answerRevealCountdown > 0 && !isPaused) {
+      const timer = setInterval(() => {
+        setAnswerRevealCountdown(prev => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    } else if (showAnswer && !showLeaderboard && answerRevealCountdown === 0 && !isPaused) {
+      // Show leaderboard after answer reveal
+      setShowLeaderboard(true);
+      setLeaderboardCountdown(15);
+    }
+  }, [showAnswer, showLeaderboard, answerRevealCountdown, isPaused]);
+
+  // Leaderboard countdown
+  useEffect(() => {
+    if (showLeaderboard && leaderboardCountdown > 0 && !isPaused) {
       const timer = setInterval(() => {
         setLeaderboardCountdown(prev => prev - 1);
       }, 1000);
       return () => clearInterval(timer);
-    } else if (showAnswer && leaderboardCountdown === 0 && !isPaused) {
+    } else if (showLeaderboard && leaderboardCountdown === 0 && !isPaused) {
       // Auto-advance after countdown
       handleNextQuestion();
     }
-  }, [showAnswer, leaderboardCountdown, isPaused]);
+  }, [showLeaderboard, leaderboardCountdown, isPaused]);
 
   const fetchQuestions = async () => {
     try {
@@ -165,7 +184,7 @@ const GamePlay = () => {
 
   const handleTimeUp = async () => {
     setShowAnswer(true);
-    setLeaderboardCountdown(30); // Reset countdown to 30 seconds
+    setAnswerRevealCountdown(15);
     await fetchLeaderboard();
   };
 
@@ -199,7 +218,6 @@ const GamePlay = () => {
   const handleNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
-      setLeaderboardCountdown(30); // Reset for next question
     } else {
       endGame();
     }
@@ -333,17 +351,23 @@ const GamePlay = () => {
             })}
           </div>
 
-          {showAnswer && (
+          {showAnswer && !showLeaderboard && (
             <div className="mt-6 text-center">
               <p className="text-2xl font-bold text-primary mb-4">
                 Correct Answer: {currentQuestion.correct_answer.toUpperCase()}
               </p>
+              <div className="flex items-center justify-center gap-2 bg-accent/20 px-4 py-2 rounded-lg inline-flex">
+                <Clock className="h-5 w-5 text-accent" />
+                <span className="text-xl font-bold text-accent">
+                  {answerRevealCountdown}s until leaderboard
+                </span>
+              </div>
             </div>
           )}
         </Card>
 
-        {/* Leaderboard */}
-        {showAnswer && leaderboard.length > 0 && (
+        {/* Leaderboard - Only show during leaderboard phase */}
+        {showLeaderboard && leaderboard.length > 0 && (
           <Card className="p-6 bg-card/80 border-primary/40">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -380,9 +404,9 @@ const GamePlay = () => {
           </Card>
         )}
 
-        {/* Controls */}
+        {/* Controls - Only show during leaderboard phase */}
         <div className="flex justify-center gap-4">
-          {showAnswer && (
+          {showLeaderboard && (
             <Button
               onClick={handleNextQuestion}
               variant="secondary"

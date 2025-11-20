@@ -15,6 +15,7 @@ import PlayerStats from "./pages/PlayerStats";
 import Leaderboards from "./pages/Leaderboards";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -29,13 +30,41 @@ const App = () => (
             <Route path="/" element={<Auth />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/host" element={<HostDashboard />} />
-            <Route path="/host/lobby/:sessionId" element={<GameLobby />} />
-            <Route path="/host/game/:sessionId" element={<GamePlay />} />
-            <Route path="/play" element={<PlayerJoin />} />
-            <Route path="/play/game/:sessionId" element={<PlayerGame />} />
-            <Route path="/play/stats" element={<PlayerStats />} />
+            <Route path="/admin" element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/host" element={
+              <ProtectedRoute allowedRoles={["host", "admin"]}>
+                <HostDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/host/lobby/:sessionId" element={
+              <ProtectedRoute allowedRoles={["host", "admin"]}>
+                <GameLobby />
+              </ProtectedRoute>
+            } />
+            <Route path="/host/game/:sessionId" element={
+              <ProtectedRoute allowedRoles={["host", "admin"]}>
+                <GamePlay />
+              </ProtectedRoute>
+            } />
+            <Route path="/play" element={
+              <ProtectedRoute allowedRoles={["player", "admin", "host"]}>
+                <PlayerJoin />
+              </ProtectedRoute>
+            } />
+            <Route path="/play/game/:sessionId" element={
+              <ProtectedRoute allowedRoles={["player", "admin", "host"]}>
+                <PlayerGame />
+              </ProtectedRoute>
+            } />
+            <Route path="/play/stats" element={
+              <ProtectedRoute allowedRoles={["player", "admin", "host"]}>
+                <PlayerStats />
+              </ProtectedRoute>
+            } />
             <Route path="/leaderboards" element={<Leaderboards />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

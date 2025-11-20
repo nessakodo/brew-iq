@@ -88,12 +88,34 @@ const GameLobby = () => {
 
   const startGame = async () => {
     try {
-      // Update game session status to active
+      // Get the first question from the event's trivia set
+      const { data: session } = await supabase
+        .from("game_sessions")
+        .select("event_id, events(trivia_set_id)")
+        .eq("id", sessionId)
+        .single();
+
+      if (!session) throw new Error("Game session not found");
+
+      const triviaSetId = (session.events as any)?.trivia_set_id;
+
+      const { data: firstQuestion } = await supabase
+        .from("questions")
+        .select("id")
+        .eq("trivia_set_id", triviaSetId)
+        .order("order_index")
+        .limit(1)
+        .single();
+
+      if (!firstQuestion) throw new Error("No questions found");
+
+      // Update game session status to active and set first question
       const { error } = await supabase
         .from("game_sessions")
         .update({ 
           status: "active",
-          started_at: new Date().toISOString()
+          started_at: new Date().toISOString(),
+          current_question_id: firstQuestion.id
         })
         .eq("id", sessionId);
 
