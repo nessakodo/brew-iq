@@ -42,6 +42,7 @@ const GamePlay = () => {
 
   useEffect(() => {
     fetchQuestions();
+    fetchLeaderboard(); // Fetch leaderboard on initial load
     setupRealtimeSubscription();
   }, [sessionId]);
 
@@ -71,10 +72,20 @@ const GamePlay = () => {
   useEffect(() => {
     if (showAnswer && !showLeaderboard && answerRevealCountdown > 0 && !isPaused) {
       const timer = setInterval(() => {
-        setAnswerRevealCountdown(prev => prev - 1);
+        setAnswerRevealCountdown(prev => {
+          const newValue = prev - 1;
+          console.log('Answer reveal countdown:', newValue);
+          return newValue;
+        });
       }, 1000);
       return () => clearInterval(timer);
-    } else if (showAnswer && !showLeaderboard && answerRevealCountdown === 0 && !isPaused) {
+    }
+  }, [showAnswer, showLeaderboard, answerRevealCountdown, isPaused]);
+
+  // Trigger leaderboard when countdown reaches 0
+  useEffect(() => {
+    if (showAnswer && !showLeaderboard && answerRevealCountdown === 0 && !isPaused) {
+      console.log('Triggering leaderboard display');
       // Fetch latest leaderboard before showing it
       fetchLeaderboard().then(() => {
         setShowLeaderboard(true);
@@ -87,11 +98,20 @@ const GamePlay = () => {
   useEffect(() => {
     if (showLeaderboard && leaderboardCountdown > 0 && !isPaused) {
       const timer = setInterval(() => {
-        setLeaderboardCountdown(prev => prev - 1);
+        setLeaderboardCountdown(prev => {
+          const newValue = prev - 1;
+          console.log('Leaderboard countdown:', newValue);
+          return newValue;
+        });
       }, 1000);
       return () => clearInterval(timer);
-    } else if (showLeaderboard && leaderboardCountdown === 0 && !isPaused) {
-      // Auto-advance after countdown
+    }
+  }, [showLeaderboard, leaderboardCountdown, isPaused]);
+
+  // Auto-advance when leaderboard countdown reaches 0
+  useEffect(() => {
+    if (showLeaderboard && leaderboardCountdown === 0 && !isPaused) {
+      console.log('Auto-advancing to next question');
       handleNextQuestion();
     }
   }, [showLeaderboard, leaderboardCountdown, isPaused]);
@@ -137,10 +157,26 @@ const GamePlay = () => {
           filter: `game_session_id=eq.${sessionId}`
         },
         () => {
+          console.log('New player answer detected');
           fetchAnswerCounts();
         }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'player_sessions',
+          filter: `game_session_id=eq.${sessionId}`
+        },
+        () => {
+          console.log('Player session updated');
+          fetchLeaderboard();
+        }
+      )
+      .subscribe((status) => {
+        console.log('Game play subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -192,7 +228,8 @@ const GamePlay = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      const { data } = await supabase
+      console.log('Fetching leaderboard for session:', sessionId);
+      const { data, error } = await supabase
         .from("player_sessions")
         .select(`
           player_id,
@@ -203,14 +240,20 @@ const GamePlay = () => {
         .order("total_points", { ascending: false })
         .limit(10);
 
+      if (error) {
+        console.error("Error fetching leaderboard:", error);
+        return;
+      }
+
+      console.log('Leaderboard data:', data);
       if (data) {
-        setLeaderboard(
-          data.map(p => ({
-            player_id: p.player_id,
-            display_name: (p.profiles as any)?.display_name || "Unknown",
-            total_points: p.total_points || 0
-          }))
-        );
+        const leaderboardData = data.map(p => ({
+          player_id: p.player_id,
+          display_name: (p.profiles as any)?.display_name || "Unknown",
+          total_points: p.total_points || 0
+        }));
+        console.log('Setting leaderboard:', leaderboardData);
+        setLeaderboard(leaderboardData);
       }
     } catch (error) {
       console.error("Error fetching leaderboard:", error);

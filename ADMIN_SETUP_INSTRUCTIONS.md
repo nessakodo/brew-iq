@@ -13,16 +13,11 @@
 
 ## Step 2: Assign Admin Role
 
-After signing up, you need to assign the admin role to your account. 
+After signing up, you need to assign the admin role to your account.
 
-### Option A: Using Lovable Cloud Dashboard
+### Option A: Using Supabase Dashboard
 
-1. Click the button below to open your backend:
-   
-   <lov-actions>
-     <lov-open-backend>Open Backend Dashboard</lov-open-backend>
-   </lov-actions>
-
+1. Open your Supabase project dashboard
 2. Navigate to Database → Tables → user_roles
 3. Click "Insert Row"
 4. Fill in:
@@ -32,7 +27,7 @@ After signing up, you need to assign the admin role to your account.
 
 ### Option B: Using SQL Query
 
-Run this SQL query in your database (replace with your email):
+Run this SQL query in your Supabase SQL Editor (replace with your email):
 
 ```sql
 -- Find your user ID and insert admin role

@@ -93,6 +93,7 @@ export const HostManagement = () => {
           filter: 'role=eq.host'
         },
         () => {
+          console.log('Host role change detected');
           fetchHosts();
         }
       )
@@ -104,10 +105,13 @@ export const HostManagement = () => {
           table: 'profiles'
         },
         () => {
+          console.log('Profile change detected');
           fetchHosts();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Host management subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);

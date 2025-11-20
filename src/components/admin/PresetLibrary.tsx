@@ -81,10 +81,25 @@ export const PresetLibrary = () => {
           table: 'trivia_sets'
         },
         () => {
+          console.log('Trivia set change detected');
           fetchSets();
         }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'questions'
+        },
+        () => {
+          console.log('Questions change detected');
+          fetchSets();
+        }
+      )
+      .subscribe((status) => {
+        console.log('Trivia sets subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);

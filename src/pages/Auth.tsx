@@ -246,6 +246,11 @@ const Auth = () => {
       <div className="min-h-screen bg-gradient-hero wood-texture flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8 shadow-card">
           <div className="text-center mb-8">
+            <img
+              src="/logo.png"
+              alt="BrewIQ Logo"
+              className="mx-auto mb-4 h-20 w-auto object-contain"
+            />
             <h1 className="text-4xl font-bold text-secondary warm-glow mb-2">
               Reset Password
             </h1>
@@ -292,6 +297,11 @@ const Auth = () => {
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-accent"></div>
         
         <div className="text-center mb-8 relative z-10">
+          <img
+            src="/logo.png"
+            alt="BrewIQ Logo"
+            className="mx-auto mb-4 h-24 w-auto object-contain"
+          />
           <h1 className="text-5xl font-bold text-secondary mb-2 warm-glow">
             BrewIQ
           </h1>

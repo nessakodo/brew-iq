@@ -1,73 +1,86 @@
-# Welcome to your Lovable project
+# BrewIQ - Real-Time Trivia Platform
 
-## Project info
+## Project Overview
 
-**URL**: https://lovable.dev/projects/a59716a8-5625-42c9-b018-28c629018c7d
+BrewIQ is a comprehensive real-time trivia platform designed for bars and entertainment venues, featuring AI-powered content generation, live gameplay, and marketing automation.
 
-## How can I edit this code?
+## Getting Started
 
-There are several ways of editing your application.
+### Prerequisites
 
-**Use Lovable**
+- Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a59716a8-5625-42c9-b018-28c629018c7d) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Installation & Development
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Step 1: Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Step 2: Navigate to the project directory
+cd bar-trivia-maestro
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Step 3: Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Set up environment variables
+# Copy .env.example to .env and fill in your Supabase credentials
+# VITE_SUPABASE_URL=your_supabase_url
+# VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+
+# Step 5: Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at `http://localhost:8080` (or the port shown in your terminal).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Testing in Incognito Mode
 
-**Use GitHub Codespaces**
+To test multiple user roles simultaneously:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. Start the dev server with `npm run dev`
+2. Open multiple incognito/private browser windows
+3. Navigate to the local URL in each window
+4. Sign in with different user accounts (admin, host, player) in each window
 
-## What technologies are used for this project?
+## Technologies Used
 
 This project is built with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **Vite** - Fast build tool and dev server
+- **TypeScript** - Type-safe JavaScript
+- **React** - UI framework
+- **shadcn-ui** - Component library
+- **Tailwind CSS** - Utility-first CSS
+- **Supabase** - Backend as a Service (Database, Auth, Realtime)
 
-## How can I deploy this project?
+## Project Structure
 
-Simply open [Lovable](https://lovable.dev/projects/a59716a8-5625-42c9-b018-28c629018c7d) and click on Share -> Publish.
+```
+src/
+├── components/       # Reusable UI components
+│   ├── admin/       # Admin dashboard components
+│   ├── player/      # Player-facing components
+│   └── ui/          # shadcn-ui components
+├── pages/           # Page components
+├── contexts/        # React contexts (Auth, etc.)
+├── hooks/           # Custom React hooks
+├── integrations/    # External service integrations (Supabase)
+└── lib/             # Utility functions
+```
 
-## Can I connect a custom domain to my Lovable project?
+## Deployment
 
-Yes, you can!
+Build the project for production:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```sh
+npm run build
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+The built files will be in the `dist/` directory and can be deployed to any static hosting service.
+
+## Contributing
+
+1. Create a feature branch
+2. Make your changes
+3. Test thoroughly
+4. Submit a pull request

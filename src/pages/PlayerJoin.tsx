@@ -149,6 +149,11 @@ const PlayerJoin = () => {
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-accent"></div>
         
         <div className="text-center mb-8">
+          <img
+            src="/logo.png"
+            alt="BrewIQ Logo"
+            className="mx-auto mb-4 h-20 w-auto object-contain"
+          />
           <div className="inline-block p-4 rounded-full bg-primary/20 mb-4 border-2 border-primary/40">
             <Hash className="h-8 w-8 text-primary" />
           </div>

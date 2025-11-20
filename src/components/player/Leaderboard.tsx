@@ -20,6 +20,41 @@ export const Leaderboard = () => {
 
   useEffect(() => {
     fetchLeaderboards();
+
+    // Setup realtime subscription for auto-updates
+    const channel = supabase
+      .channel('leaderboard-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'player_stats'
+        },
+        () => {
+          console.log('Player stats change detected');
+          fetchLeaderboards();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'player_sessions'
+        },
+        () => {
+          console.log('Player sessions change detected');
+          fetchLeaderboards();
+        }
+      )
+      .subscribe((status) => {
+        console.log('Leaderboard subscription status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchLeaderboards = async () => {

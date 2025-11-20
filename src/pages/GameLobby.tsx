@@ -142,6 +142,11 @@ const GameLobby = () => {
       <Card className="max-w-4xl w-full p-12 leather-texture border-2 border-primary/40 shadow-card">
         <div className="text-center space-y-8">
           <div>
+            <img
+              src="/logo.png"
+              alt="BrewIQ Logo"
+              className="mx-auto mb-6 h-24 w-auto object-contain"
+            />
             <h1 className="text-5xl font-bold text-secondary warm-glow mb-4">
               Game Starting Soon
             </h1>

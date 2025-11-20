@@ -60,11 +60,20 @@ const PlayerGame = () => {
           filter: `id=eq.${sessionId}`
         },
         (payload) => {
+          console.log('Game session update received:', payload);
           const newData = payload.new as any;
           if (newData.status === "ended") {
             setGameStatus("ended");
             setTimeout(() => navigate("/play/stats"), 3000);
+          } else if (newData.status === "active") {
+            // Game has started, fetch the current question
+            setGameStatus("active");
+            fetchCurrentQuestion();
+            setHasAnswered(false);
+            setShowResult(false);
+            setSelectedAnswer(null);
           } else if (newData.current_question_id) {
+            // New question available
             fetchCurrentQuestion();
             setHasAnswered(false);
             setShowResult(false);
@@ -72,7 +81,9 @@ const PlayerGame = () => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Player game subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
