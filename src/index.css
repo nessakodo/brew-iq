@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Irish Pub / Bar Theme - warm, cozy, sophisticated */
+    --background: 25 30% 8%;
+    --foreground: 40 20% 95%;
+
+    --card: 30 25% 12%;
+    --card-foreground: 40 20% 95%;
+
+    --popover: 30 25% 10%;
+    --popover-foreground: 40 20% 95%;
+
+    /* Deep forest green primary */
+    --primary: 145 40% 35%;
+    --primary-foreground: 40 20% 95%;
+
+    /* Rich amber/gold secondary */
+    --secondary: 38 85% 55%;
+    --secondary-foreground: 25 30% 8%;
+
+    --muted: 30 20% 18%;
+    --muted-foreground: 40 15% 60%;
+
+    /* Warm copper accent */
+    --accent: 25 75% 50%;
+    --accent-foreground: 40 20% 95%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 40 20% 95%;
+
+    --border: 30 20% 20%;
+    --input: 30 25% 15%;
+    --ring: 145 40% 35%;
+
+    /* Warm rounded corners */
+    --radius: 0.5rem;
+
+    /* Warm wood-inspired gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(145 40% 35%), hsl(155 35% 25%));
+    --gradient-accent: linear-gradient(135deg, hsl(38 85% 55%), hsl(25 75% 50%));
+    --gradient-hero: linear-gradient(180deg, hsl(25 30% 8%), hsl(30 25% 5%));
+    --gradient-wood: linear-gradient(90deg, hsl(30 40% 20%), hsl(25 35% 15%), hsl(30 40% 20%));
+
+    /* Subtle warm shadows */
+    --shadow-glow: 0 0 30px hsl(38 85% 55% / 0.2), 0 4px 20px hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.4), 0 2px 8px hsl(30 40% 20% / 0.2);
+    --shadow-warm: 0 0 20px hsl(25 75% 50% / 0.3);
+
+    --sidebar-background: 25 30% 6%;
+    --sidebar-foreground: 40 20% 95%;
+    --sidebar-primary: 145 40% 35%;
+    --sidebar-primary-foreground: 40 20% 95%;
+    --sidebar-accent: 30 25% 12%;
+    --sidebar-accent-foreground: 40 20% 95%;
+    --sidebar-border: 30 20% 15%;
+    --sidebar-ring: 145 40% 35%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Georgia', 'Times New Roman', serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  button {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+}
+
+/* Bar/Pub themed utilities */
+@layer utilities {
+  .wood-texture {
+    position: relative;
+    background: linear-gradient(90deg, 
+      hsl(30 40% 20%) 0%, 
+      hsl(25 35% 15%) 50%, 
+      hsl(30 40% 20%) 100%
+    );
+  }
+
+  .wood-texture::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+    pointer-events: none;
+  }
+
+  .warm-glow {
+    text-shadow: 0 0 20px hsl(38 85% 55% / 0.3);
+  }
+
+  .brass-border {
+    border: 2px solid hsl(38 85% 55%);
+    box-shadow: 
+      inset 0 1px 0 hsl(38 85% 65%),
+      inset 0 -1px 0 hsl(38 85% 45%),
+      0 2px 8px hsl(0 0% 0% / 0.3);
+  }
+
+  .leather-texture {
+    background: 
+      radial-gradient(ellipse at 20% 30%, hsl(30 25% 14%) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 70%, hsl(30 25% 16%) 0%, transparent 50%),
+      hsl(30 25% 12%);
+  }
+}
