@@ -80,6 +80,38 @@ export const HostManagement = () => {
 
   useEffect(() => {
     fetchHosts();
+
+    // Setup realtime subscription for auto-updates
+    const channel = supabase
+      .channel('host-management')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_roles',
+          filter: 'role=eq.host'
+        },
+        () => {
+          fetchHosts();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles'
+        },
+        () => {
+          fetchHosts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleCreateHost = async (e: React.FormEvent) => {

@@ -69,6 +69,26 @@ export const PresetLibrary = () => {
 
   useEffect(() => {
     fetchSets();
+
+    // Setup realtime subscription for auto-updates
+    const channel = supabase
+      .channel('trivia-sets')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'trivia_sets'
+        },
+        () => {
+          fetchSets();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleDelete = async (id: string) => {

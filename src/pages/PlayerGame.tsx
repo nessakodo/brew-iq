@@ -92,11 +92,15 @@ const PlayerGame = () => {
       setGameStatus(session.status);
 
       if (session.status === "lobby") {
-        // Still in lobby
+        // Still in lobby, clear question
+        setCurrentQuestion(null);
         return;
       }
 
-      if (!session.current_question_id) return;
+      if (!session.current_question_id) {
+        setCurrentQuestion(null);
+        return;
+      }
 
       const { data: questionData, error } = await supabase
         .from("questions")

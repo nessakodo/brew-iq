@@ -75,9 +75,11 @@ const GamePlay = () => {
       }, 1000);
       return () => clearInterval(timer);
     } else if (showAnswer && !showLeaderboard && answerRevealCountdown === 0 && !isPaused) {
-      // Show leaderboard after answer reveal
-      setShowLeaderboard(true);
-      setLeaderboardCountdown(15);
+      // Fetch latest leaderboard before showing it
+      fetchLeaderboard().then(() => {
+        setShowLeaderboard(true);
+        setLeaderboardCountdown(15);
+      });
     }
   }, [showAnswer, showLeaderboard, answerRevealCountdown, isPaused]);
 
@@ -367,7 +369,7 @@ const GamePlay = () => {
         </Card>
 
         {/* Leaderboard - Only show during leaderboard phase */}
-        {showLeaderboard && leaderboard.length > 0 && (
+        {showLeaderboard && (
           <Card className="p-6 bg-card/80 border-primary/40">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -382,7 +384,12 @@ const GamePlay = () => {
               </div>
             </div>
             <div className="space-y-2">
-              {leaderboard.slice(0, 5).map((player, index) => (
+              {leaderboard.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-xl">No players have joined yet</p>
+                </div>
+              ) : (
+                leaderboard.slice(0, 5).map((player, index) => (
                 <div
                   key={player.player_id}
                   className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
@@ -399,7 +406,8 @@ const GamePlay = () => {
                     {player.total_points} pts
                   </span>
                 </div>
-              ))}
+              ))
+            )}
             </div>
           </Card>
         )}
