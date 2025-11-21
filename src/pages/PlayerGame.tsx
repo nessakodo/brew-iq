@@ -159,7 +159,8 @@ const PlayerGame = () => {
     fetchCurrentQuestion();
     fetchMyScore();
 
-    const channel = supabase
+    // Subscribe to game session changes (for status updates)
+    const sessionChannel = supabase
       .channel(`player-game-${sessionId}`)
       .on(
         'postgres_changes',
@@ -175,13 +176,58 @@ const PlayerGame = () => {
         }
       )
       .subscribe((status) => {
-        console.log('Subscription status:', status);
+        console.log('Session subscription status:', status);
+      });
+
+    // Subscribe to question broadcasts from host (bypasses RLS)
+    const questionChannel = supabase
+      .channel(`game-questions-${sessionId}`)
+      .on('broadcast', { event: 'question' }, (payload) => {
+        console.log('Question broadcast received:', payload);
+        const questionData = payload.payload;
+
+        if (questionData && questionData.id !== currentQuestionId) {
+          // Reset answer states for new question
+          setHasAnswered(false);
+          setShowResult(false);
+          setSelectedAnswer(null);
+          setLastPointsEarned(0);
+
+          setCurrentQuestion(questionData);
+          setCurrentQuestionId(questionData.id);
+          setTimeRemaining(questionData.time_limit_seconds);
+          setGameStatus('active');
+
+          // Check if we already answered this question
+          if (user?.id) {
+            supabase
+              .from("player_answers")
+              .select("*")
+              .eq("game_session_id", sessionId)
+              .eq("question_id", questionData.id)
+              .eq("player_id", user.id)
+              .maybeSingle()
+              .then(({ data: existingAnswer }) => {
+                if (existingAnswer) {
+                  setHasAnswered(true);
+                  setShowResult(true);
+                  setSelectedAnswer(existingAnswer.selected_answer);
+                  setIsCorrect(existingAnswer.is_correct);
+                  setLastPointsEarned(existingAnswer.points_earned || 0);
+                }
+              });
+          }
+        }
+      })
+      .subscribe((status) => {
+        console.log('Question channel subscription status:', status);
       });
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(sessionChannel);
+      supabase.removeChannel(questionChannel);
     };
-  }, [sessionId, fetchCurrentQuestion, fetchMyScore]);
+  }, [sessionId, fetchCurrentQuestion, fetchMyScore, currentQuestionId, user?.id]);
 
   // Polling fallback - always poll when in lobby or no question loaded
   useEffect(() => {

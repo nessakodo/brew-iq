@@ -106,10 +106,10 @@ const GameLobby = () => {
 
       if (eventError || !eventData?.trivia_set_id) throw new Error("Trivia set not found");
 
-      // Get the first question from the trivia set
+      // Get the first question from the trivia set (full data for broadcast)
       const { data: firstQuestion, error: questionError } = await supabase
         .from("questions")
-        .select("id")
+        .select("*")
         .eq("trivia_set_id", eventData.trivia_set_id)
         .order("order_index")
         .limit(1)
@@ -128,6 +128,22 @@ const GameLobby = () => {
         .eq("id", sessionId);
 
       if (error) throw error;
+
+      // Broadcast first question data to players (bypasses RLS)
+      await supabase.channel(`game-questions-${sessionId}`).send({
+        type: 'broadcast',
+        event: 'question',
+        payload: {
+          id: firstQuestion.id,
+          question_text: firstQuestion.question_text,
+          option_a: firstQuestion.option_a,
+          option_b: firstQuestion.option_b,
+          option_c: firstQuestion.option_c,
+          option_d: firstQuestion.option_d,
+          correct_answer: firstQuestion.correct_answer,
+          time_limit_seconds: firstQuestion.time_limit_seconds
+        }
+      });
 
       navigate(`/host/game/${sessionId}`);
     } catch (error: any) {

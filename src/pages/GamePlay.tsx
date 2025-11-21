@@ -228,11 +228,30 @@ const GamePlay = () => {
   const updateCurrentQuestion = async () => {
     if (currentQuestionIndex >= questions.length) return;
 
+    const question = questions[currentQuestionIndex];
+
     try {
+      // Update the game session with current question ID
       await supabase
         .from("game_sessions")
-        .update({ current_question_id: questions[currentQuestionIndex].id })
+        .update({ current_question_id: question.id })
         .eq("id", sessionId);
+
+      // Broadcast full question data to players (bypasses RLS)
+      await supabase.channel(`game-questions-${sessionId}`).send({
+        type: 'broadcast',
+        event: 'question',
+        payload: {
+          id: question.id,
+          question_text: question.question_text,
+          option_a: question.option_a,
+          option_b: question.option_b,
+          option_c: question.option_c,
+          option_d: question.option_d,
+          correct_answer: question.correct_answer,
+          time_limit_seconds: question.time_limit_seconds
+        }
+      });
 
       fetchAnswerCounts();
     } catch (error) {
