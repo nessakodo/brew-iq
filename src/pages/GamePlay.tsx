@@ -285,6 +285,19 @@ const GamePlay = () => {
     setShowAnswer(true);
     setAnswerRevealCountdown(15);
     await fetchLeaderboard();
+
+    // Broadcast answer reveal to players
+    const question = questions[currentQuestionIndex];
+    if (question) {
+      await supabase.channel(`game-questions-${sessionId}`).send({
+        type: 'broadcast',
+        event: 'answer_reveal',
+        payload: {
+          question_id: question.id,
+          correct_answer: question.correct_answer
+        }
+      });
+    }
   };
 
   const fetchLeaderboard = async () => {

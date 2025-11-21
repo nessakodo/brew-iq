@@ -210,14 +210,19 @@ const PlayerGame = () => {
               .then(({ data: existingAnswer }) => {
                 if (existingAnswer) {
                   setHasAnswered(true);
-                  setShowResult(true);
                   setSelectedAnswer(existingAnswer.selected_answer);
                   setIsCorrect(existingAnswer.is_correct);
                   setLastPointsEarned(existingAnswer.points_earned || 0);
+                  // Don't show result yet - wait for host reveal
                 }
               });
           }
         }
+      })
+      .on('broadcast', { event: 'answer_reveal' }, () => {
+        console.log('Answer reveal broadcast received');
+        // Now show the result to the player
+        setShowResult(true);
       })
       .subscribe((status) => {
         console.log('Question channel subscription status:', status);
@@ -300,20 +305,7 @@ const PlayerGame = () => {
         .eq("player_id", user.id);
 
       setMyScore(newTotal);
-      setShowResult(true);
-
-      if (correct) {
-        toast({
-          title: `🎉 Correct! +${points} points`,
-          description: points >= 800 ? "Lightning fast!" : points >= 600 ? "Quick answer!" : "Nice job!",
-        });
-      } else {
-        toast({
-          title: "Incorrect",
-          description: `The answer was ${currentQuestion.correct_answer.toUpperCase()}`,
-          variant: "destructive",
-        });
-      }
+      // Don't show result yet - wait for host to reveal answer
     } catch (error) {
       console.error("Error submitting answer:", error);
     }
