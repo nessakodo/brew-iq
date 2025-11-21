@@ -187,6 +187,14 @@ const GamePlay = () => {
     }
   };
 
+  const fetchPlayerCount = async () => {
+    const { count } = await supabase
+      .from("player_sessions")
+      .select("*", { count: "exact", head: true })
+      .eq("game_session_id", sessionId);
+    setPlayerCount(count || 0);
+  };
+
   const setupRealtimeSubscription = () => {
     const channel = supabase
       .channel(`game-play-${sessionId}`)
@@ -201,18 +209,20 @@ const GamePlay = () => {
         () => {
           console.log('New player answer detected');
           fetchAnswerCounts();
+          fetchLeaderboard(); // Update leaderboard when answers come in
         }
       )
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: 'INSERT',
           schema: 'public',
           table: 'player_sessions',
           filter: `game_session_id=eq.${sessionId}`
         },
         () => {
-          console.log('Player session updated');
+          console.log('New player joined');
+          fetchPlayerCount();
           fetchLeaderboard();
         }
       )
@@ -304,12 +314,11 @@ const GamePlay = () => {
     try {
       console.log('Fetching leaderboard for session:', sessionId);
 
-      // First get all player sessions for this game
+      // Get all player sessions for this game
       const { data: playerSessions, error: sessionsError } = await supabase
         .from("player_sessions")
-        .select("player_id, total_points")
-        .eq("game_session_id", sessionId)
-        .order("total_points", { ascending: false });
+        .select("player_id")
+        .eq("game_session_id", sessionId);
 
       if (sessionsError) {
         console.error("Error fetching player sessions:", sessionsError);
@@ -322,8 +331,26 @@ const GamePlay = () => {
         return;
       }
 
-      // Get all player profiles
       const playerIds = playerSessions.map(p => p.player_id);
+
+      // Calculate points from player_answers (source of truth)
+      const { data: answers, error: answersError } = await supabase
+        .from("player_answers")
+        .select("player_id, points_earned")
+        .eq("game_session_id", sessionId);
+
+      if (answersError) {
+        console.error("Error fetching answers:", answersError);
+      }
+
+      // Sum points per player
+      const pointsMap = new Map<string, number>();
+      answers?.forEach(a => {
+        const current = pointsMap.get(a.player_id) || 0;
+        pointsMap.set(a.player_id, current + (a.points_earned || 0));
+      });
+
+      // Get all player profiles
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("id, display_name, email")
@@ -339,15 +366,15 @@ const GamePlay = () => {
         profileMap.set(p.id, p);
       });
 
-      // Build leaderboard with all players
-      const leaderboardData = playerSessions.map((p, index) => {
-        const profile = profileMap.get(p.player_id);
+      // Build leaderboard with calculated points
+      const leaderboardData = playerIds.map((playerId, index) => {
+        const profile = profileMap.get(playerId);
         return {
-          player_id: p.player_id,
+          player_id: playerId,
           display_name: profile?.display_name || profile?.email?.split('@')[0] || `Player ${index + 1}`,
-          total_points: p.total_points || 0
+          total_points: pointsMap.get(playerId) || 0
         };
-      });
+      }).sort((a, b) => b.total_points - a.total_points);
 
       console.log('Leaderboard data:', leaderboardData);
       setLeaderboard(leaderboardData);

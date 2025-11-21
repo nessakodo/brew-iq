@@ -139,16 +139,15 @@ const PlayerGame = () => {
     if (!sessionId || !user?.id) return;
 
     try {
-      const { data } = await supabase
-        .from("player_sessions")
-        .select("total_points")
+      // Calculate score from player_answers (source of truth)
+      const { data: answers } = await supabase
+        .from("player_answers")
+        .select("points_earned")
         .eq("game_session_id", sessionId)
-        .eq("player_id", user.id)
-        .single();
+        .eq("player_id", user.id);
 
-      if (data) {
-        setMyScore(data.total_points || 0);
-      }
+      const total = answers?.reduce((sum, a) => sum + (a.points_earned || 0), 0) || 0;
+      setMyScore(total);
     } catch (error) {
       console.error("Error fetching score:", error);
     }
@@ -273,12 +272,12 @@ const PlayerGame = () => {
     setLastPointsEarned(points);
 
     try {
-      // Record answer
+      // Record answer (must be uppercase for database constraint)
       const { error: answerError } = await supabase.from("player_answers").insert({
         game_session_id: sessionId,
         player_id: user.id,
         question_id: currentQuestion.id,
-        selected_answer: answer,
+        selected_answer: answer.toUpperCase(),
         is_correct: correct,
         time_taken_seconds: timeTaken,
         points_earned: points
@@ -286,25 +285,11 @@ const PlayerGame = () => {
 
       if (answerError) {
         console.error('Error recording answer:', answerError);
+        return; // Don't update score if insert failed
       }
 
-      // Update player session points
-      const { data: currentSession } = await supabase
-        .from("player_sessions")
-        .select("total_points")
-        .eq("game_session_id", sessionId)
-        .eq("player_id", user.id)
-        .single();
-
-      const newTotal = (currentSession?.total_points || 0) + points;
-
-      await supabase
-        .from("player_sessions")
-        .update({ total_points: newTotal })
-        .eq("game_session_id", sessionId)
-        .eq("player_id", user.id);
-
-      setMyScore(newTotal);
+      // Update local score immediately (will be verified from player_answers on next fetch)
+      setMyScore(prev => prev + points);
       // Don't show result yet - wait for host to reveal answer
     } catch (error) {
       console.error("Error submitting answer:", error);
