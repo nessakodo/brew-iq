@@ -77,7 +77,7 @@ const HostDashboard = () => {
 
   const handleStartGame = async (eventId: string) => {
     if (startingGame) return; // Prevent multiple clicks
-    
+
     setStartingGame(eventId);
     try {
       // Check if event has a trivia set
@@ -99,7 +99,7 @@ const HostDashboard = () => {
 
       // Generate 6-digit game code
       const gameCode = Math.floor(100000 + Math.random() * 900000).toString();
-      
+
       const { data, error } = await supabase
         .from("game_sessions")
         .insert({

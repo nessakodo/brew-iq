@@ -88,31 +88,39 @@ const GameLobby = () => {
 
   const startGame = async () => {
     try {
-      // Get the first question from the event's trivia set
-      const { data: session } = await supabase
+      // Get the game session to find the event
+      const { data: session, error: sessionError } = await supabase
         .from("game_sessions")
-        .select("event_id, events(trivia_set_id)")
+        .select("event_id")
         .eq("id", sessionId)
         .single();
 
-      if (!session) throw new Error("Game session not found");
+      if (sessionError || !session) throw new Error("Game session not found");
 
-      const triviaSetId = (session.events as any)?.trivia_set_id;
+      // Get the trivia set from the event
+      const { data: eventData, error: eventError } = await supabase
+        .from("events")
+        .select("trivia_set_id")
+        .eq("id", session.event_id)
+        .single();
 
-      const { data: firstQuestion } = await supabase
+      if (eventError || !eventData?.trivia_set_id) throw new Error("Trivia set not found");
+
+      // Get the first question from the trivia set
+      const { data: firstQuestion, error: questionError } = await supabase
         .from("questions")
         .select("id")
-        .eq("trivia_set_id", triviaSetId)
+        .eq("trivia_set_id", eventData.trivia_set_id)
         .order("order_index")
         .limit(1)
         .single();
 
-      if (!firstQuestion) throw new Error("No questions found");
+      if (questionError || !firstQuestion) throw new Error("No questions found");
 
       // Update game session status to active and set first question
       const { error } = await supabase
         .from("game_sessions")
-        .update({ 
+        .update({
           status: "active",
           started_at: new Date().toISOString(),
           current_question_id: firstQuestion.id
@@ -123,9 +131,10 @@ const GameLobby = () => {
 
       navigate(`/host/game/${sessionId}`);
     } catch (error: any) {
+      console.error("Error starting game:", error);
       toast({
         title: "Error",
-        description: "Failed to start game",
+        description: error.message || "Failed to start game",
         variant: "destructive",
       });
     }

@@ -66,12 +66,12 @@ const PlayerJoin = () => {
     }
 
     try {
-      // Check if game session exists and is in lobby status
+      // Check if game session exists and is accepting players (lobby or active)
       const { data: session, error: sessionError } = await supabase
         .from("game_sessions")
         .select("*")
         .eq("game_code", gameCode.toUpperCase())
-        .eq("status", "lobby")
+        .in("status", ["lobby", "active"])
         .single();
 
       if (sessionError || !session) {

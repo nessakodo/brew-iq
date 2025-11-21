@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Trophy, Clock, Pause, Play } from "lucide-react";
+import { Trophy, Clock, Pause, Play, Users } from "lucide-react";
 
 interface Question {
   id: string;
@@ -39,12 +39,46 @@ const GamePlay = () => {
   const [answerRevealCountdown, setAnswerRevealCountdown] = useState(15);
   const [leaderboardCountdown, setLeaderboardCountdown] = useState(15);
   const [isPaused, setIsPaused] = useState(false);
+  const [playerCount, setPlayerCount] = useState(0);
+  const [gameCode, setGameCode] = useState("");
 
   useEffect(() => {
     fetchQuestions();
-    fetchLeaderboard(); // Fetch leaderboard on initial load
+    fetchLeaderboard();
+    fetchGameInfo();
     setupRealtimeSubscription();
+
+    // Poll for leaderboard updates every 3 seconds
+    const leaderboardPoll = setInterval(() => {
+      fetchLeaderboard();
+    }, 3000);
+
+    return () => clearInterval(leaderboardPoll);
   }, [sessionId]);
+
+  const fetchGameInfo = async () => {
+    try {
+      const { data: session } = await supabase
+        .from("game_sessions")
+        .select("game_code")
+        .eq("id", sessionId)
+        .single();
+
+      if (session) {
+        setGameCode(session.game_code);
+      }
+
+      // Get player count
+      const { count } = await supabase
+        .from("player_sessions")
+        .select("*", { count: "exact", head: true })
+        .eq("game_session_id", sessionId);
+
+      setPlayerCount(count || 0);
+    } catch (error) {
+      console.error("Error fetching game info:", error);
+    }
+  };
 
   useEffect(() => {
     if (currentQuestionIndex < questions.length) {
@@ -118,20 +152,28 @@ const GamePlay = () => {
 
   const fetchQuestions = async () => {
     try {
-      const { data: session } = await supabase
+      // Get the game session to find the event
+      const { data: session, error: sessionError } = await supabase
         .from("game_sessions")
-        .select("event_id, events(trivia_set_id)")
+        .select("event_id")
         .eq("id", sessionId)
         .single();
 
-      if (!session) throw new Error("Game session not found");
+      if (sessionError || !session) throw new Error("Game session not found");
 
-      const triviaSetId = (session.events as any)?.trivia_set_id;
+      // Get the trivia set from the event
+      const { data: eventData, error: eventError } = await supabase
+        .from("events")
+        .select("trivia_set_id")
+        .eq("id", session.event_id)
+        .single();
+
+      if (eventError || !eventData?.trivia_set_id) throw new Error("Trivia set not found");
 
       const { data: questionsData, error } = await supabase
         .from("questions")
         .select("*")
-        .eq("trivia_set_id", triviaSetId)
+        .eq("trivia_set_id", eventData.trivia_set_id)
         .order("order_index");
 
       if (error) throw error;
@@ -229,32 +271,54 @@ const GamePlay = () => {
   const fetchLeaderboard = async () => {
     try {
       console.log('Fetching leaderboard for session:', sessionId);
-      const { data, error } = await supabase
-        .from("player_sessions")
-        .select(`
-          player_id,
-          total_points,
-          profiles(display_name)
-        `)
-        .eq("game_session_id", sessionId)
-        .order("total_points", { ascending: false })
-        .limit(10);
 
-      if (error) {
-        console.error("Error fetching leaderboard:", error);
+      // First get all player sessions for this game
+      const { data: playerSessions, error: sessionsError } = await supabase
+        .from("player_sessions")
+        .select("player_id, total_points")
+        .eq("game_session_id", sessionId)
+        .order("total_points", { ascending: false });
+
+      if (sessionsError) {
+        console.error("Error fetching player sessions:", sessionsError);
         return;
       }
 
-      console.log('Leaderboard data:', data);
-      if (data) {
-        const leaderboardData = data.map(p => ({
-          player_id: p.player_id,
-          display_name: (p.profiles as any)?.display_name || "Unknown",
-          total_points: p.total_points || 0
-        }));
-        console.log('Setting leaderboard:', leaderboardData);
-        setLeaderboard(leaderboardData);
+      if (!playerSessions || playerSessions.length === 0) {
+        console.log('No players found');
+        setLeaderboard([]);
+        return;
       }
+
+      // Get all player profiles
+      const playerIds = playerSessions.map(p => p.player_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, display_name, email")
+        .in("id", playerIds);
+
+      if (profilesError) {
+        console.error("Error fetching profiles:", profilesError);
+      }
+
+      // Create a map of player_id to profile
+      const profileMap = new Map();
+      profiles?.forEach(p => {
+        profileMap.set(p.id, p);
+      });
+
+      // Build leaderboard with all players
+      const leaderboardData = playerSessions.map((p, index) => {
+        const profile = profileMap.get(p.player_id);
+        return {
+          player_id: p.player_id,
+          display_name: profile?.display_name || profile?.email?.split('@')[0] || `Player ${index + 1}`,
+          total_points: p.total_points || 0
+        };
+      });
+
+      console.log('Leaderboard data:', leaderboardData);
+      setLeaderboard(leaderboardData);
     } catch (error) {
       console.error("Error fetching leaderboard:", error);
     }
@@ -310,20 +374,21 @@ const GamePlay = () => {
   return (
     <div className="min-h-screen bg-gradient-hero wood-texture p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Progress Bar and Pause Button */}
-        <div className="flex gap-4">
-          <Card className="flex-1 p-4 bg-card/80 border-primary/40">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">
-                Question {currentQuestionIndex + 1} of {questions.length}
-              </span>
-              <span className="text-sm font-bold text-secondary">
-                {Math.round(progressPercent)}%
-              </span>
-            </div>
-            <Progress value={progressPercent} className="h-2" />
-          </Card>
-          
+        {/* Game Info Header */}
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <Card className="px-6 py-3 bg-secondary/20 border-secondary">
+              <p className="text-sm text-muted-foreground">Game Code</p>
+              <p className="text-2xl font-bold text-secondary tracking-widest">{gameCode}</p>
+            </Card>
+            <Card className="px-6 py-3 bg-card/80 border-primary/40">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                <span className="text-2xl font-bold text-foreground">{playerCount}</span>
+              </div>
+              <p className="text-sm text-muted-foreground">Players</p>
+            </Card>
+          </div>
           <Button
             onClick={togglePause}
             variant={isPaused ? "default" : "secondary"}
@@ -344,23 +409,39 @@ const GamePlay = () => {
           </Button>
         </div>
 
-        {isPaused && (
-          <Card className="p-6 bg-accent/20 border-accent text-center">
-            <p className="text-2xl font-bold text-accent">Game Paused</p>
-            <p className="text-muted-foreground mt-2">Press Resume to continue</p>
-          </Card>
-        )}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Main Game Area */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Progress Bar */}
+            <Card className="p-4 bg-card/80 border-primary/40">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </span>
+                <span className="text-sm font-bold text-secondary">
+                  {Math.round(progressPercent)}%
+                </span>
+              </div>
+              <Progress value={progressPercent} className="h-2" />
+            </Card>
 
-        {/* Timer */}
-        <Card className="p-6 bg-card/80 border-primary/40 text-center">
-          <div className="flex items-center justify-center gap-3">
-            <Clock className="h-8 w-8 text-accent" />
-            <span className="text-6xl font-bold text-foreground">
-              {timeRemaining}
-            </span>
-          </div>
-          <p className="text-muted-foreground mt-2">Seconds Remaining</p>
-        </Card>
+            {isPaused && (
+              <Card className="p-6 bg-accent/20 border-accent text-center">
+                <p className="text-2xl font-bold text-accent">Game Paused</p>
+                <p className="text-muted-foreground mt-2">Press Resume to continue</p>
+              </Card>
+            )}
+
+            {/* Timer */}
+            <Card className="p-6 bg-card/80 border-primary/40 text-center">
+              <div className="flex items-center justify-center gap-3">
+                <Clock className="h-8 w-8 text-accent" />
+                <span className="text-6xl font-bold text-foreground">
+                  {timeRemaining}
+                </span>
+              </div>
+              <p className="text-muted-foreground mt-2">Seconds Remaining</p>
+            </Card>
 
         {/* Question Display */}
         <Card className="p-8 bg-card/80 border-primary/40 leather-texture">
@@ -387,9 +468,11 @@ const GamePlay = () => {
                     <span className="text-2xl font-bold text-foreground">
                       {option.toUpperCase()}. {currentQuestion[optionKey] as string}
                     </span>
-                    <span className="text-xl font-bold text-secondary">
-                      {count}
-                    </span>
+                    {count > 0 && (
+                      <span className="text-xl font-bold text-secondary">
+                        {count}
+                      </span>
+                    )}
                   </div>
                 </div>
               );
@@ -411,7 +494,7 @@ const GamePlay = () => {
           )}
         </Card>
 
-        {/* Leaderboard - Only show during leaderboard phase */}
+        {/* Leaderboard - Show during leaderboard phase in main area */}
         {showLeaderboard && (
           <Card className="p-6 bg-card/80 border-primary/40">
             <div className="flex items-center justify-between mb-4">
@@ -468,6 +551,51 @@ const GamePlay = () => {
               {currentQuestionIndex < questions.length - 1 ? "Next Question" : "End Game"}
             </Button>
           )}
+        </div>
+          </div>
+
+          {/* Live Leaderboard Sidebar */}
+          <div className="lg:col-span-1">
+            <Card className="p-4 bg-card/80 border-primary/40 sticky top-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Trophy className="h-5 w-5 text-secondary" />
+                <h3 className="text-lg font-bold text-foreground">Live Scores</h3>
+              </div>
+              <div className="space-y-2">
+                {leaderboard.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Waiting for players...
+                  </p>
+                ) : (
+                  leaderboard.slice(0, 10).map((player, index) => (
+                    <div
+                      key={player.player_id}
+                      className={`flex items-center justify-between p-2 rounded ${
+                        index < 3 ? 'bg-secondary/10' : 'bg-muted/20'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-bold w-6 ${
+                          index === 0 ? 'text-yellow-500' :
+                          index === 1 ? 'text-gray-400' :
+                          index === 2 ? 'text-amber-600' :
+                          'text-muted-foreground'
+                        }`}>
+                          {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                        </span>
+                        <span className="text-sm text-foreground truncate max-w-[100px]">
+                          {player.display_name}
+                        </span>
+                      </div>
+                      <span className="text-sm font-bold text-primary">
+                        {player.total_points}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

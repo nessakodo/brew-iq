@@ -1,12 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, XCircle, Trophy, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, Trophy, Clock, Zap } from "lucide-react";
 
 interface Question {
   id: string;
@@ -25,30 +24,141 @@ const PlayerGame = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
+  const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [myScore, setMyScore] = useState(0);
-  const [gameStatus, setGameStatus] = useState<string>("active");
+  const [gameStatus, setGameStatus] = useState<string>("lobby");
+  const [lastPointsEarned, setLastPointsEarned] = useState(0);
 
+  // Kahoot-style scoring: 1000 max points, decreases with time
+  const calculatePoints = (correct: boolean, timeTaken: number, totalTime: number): number => {
+    if (!correct) return 0;
+    // Base: 1000 points, minimum 500 points for correct answer
+    // Speed bonus: faster answers get more points
+    const timeRatio = Math.max(0, 1 - (timeTaken / totalTime));
+    const points = Math.round(500 + (500 * timeRatio));
+    return points;
+  };
+
+  const fetchCurrentQuestion = useCallback(async () => {
+    if (!sessionId) return;
+
+    try {
+      const { data: session, error: sessionError } = await supabase
+        .from("game_sessions")
+        .select("current_question_id, status")
+        .eq("id", sessionId)
+        .single();
+
+      if (sessionError) {
+        console.error('Session fetch error:', sessionError);
+        return;
+      }
+
+      if (!session) {
+        console.log('No session found');
+        return;
+      }
+
+      console.log('Game status:', session.status, 'Question ID:', session.current_question_id);
+      setGameStatus(session.status);
+
+      if (session.status === "lobby") {
+        setCurrentQuestion(null);
+        setCurrentQuestionId(null);
+        return;
+      }
+
+      if (session.status === "ended") {
+        setTimeout(() => navigate("/play/stats"), 3000);
+        return;
+      }
+
+      if (!session.current_question_id) {
+        console.log('No current question ID set');
+        setCurrentQuestion(null);
+        return;
+      }
+
+      // Only fetch question if it's different from what we have
+      if (session.current_question_id !== currentQuestionId) {
+        console.log('Fetching new question:', session.current_question_id);
+
+        const { data: questionData, error: questionError } = await supabase
+          .from("questions")
+          .select("*")
+          .eq("id", session.current_question_id)
+          .single();
+
+        if (questionError) {
+          console.error('Question fetch error:', questionError);
+          return;
+        }
+
+        if (questionData) {
+          // Reset answer states for new question
+          setHasAnswered(false);
+          setShowResult(false);
+          setSelectedAnswer(null);
+          setLastPointsEarned(0);
+
+          setCurrentQuestion(questionData);
+          setCurrentQuestionId(session.current_question_id);
+          setTimeRemaining(questionData.time_limit_seconds);
+
+          // Check if we already answered this question
+          if (user?.id) {
+            const { data: existingAnswer } = await supabase
+              .from("player_answers")
+              .select("*")
+              .eq("game_session_id", sessionId)
+              .eq("question_id", questionData.id)
+              .eq("player_id", user.id)
+              .maybeSingle();
+
+            if (existingAnswer) {
+              setHasAnswered(true);
+              setShowResult(true);
+              setSelectedAnswer(existingAnswer.selected_answer);
+              setIsCorrect(existingAnswer.is_correct);
+              setLastPointsEarned(existingAnswer.points_earned || 0);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching question:", error);
+    }
+  }, [sessionId, currentQuestionId, user?.id, navigate]);
+
+  const fetchMyScore = useCallback(async () => {
+    if (!sessionId || !user?.id) return;
+
+    try {
+      const { data } = await supabase
+        .from("player_sessions")
+        .select("total_points")
+        .eq("game_session_id", sessionId)
+        .eq("player_id", user.id)
+        .single();
+
+      if (data) {
+        setMyScore(data.total_points || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching score:", error);
+    }
+  }, [sessionId, user?.id]);
+
+  // Initial setup and realtime subscription
   useEffect(() => {
-    setupRealtimeSubscription();
     fetchCurrentQuestion();
     fetchMyScore();
-  }, [sessionId]);
 
-  useEffect(() => {
-    if (timeRemaining > 0 && !hasAnswered) {
-      const timer = setInterval(() => {
-        setTimeRemaining(prev => prev - 1);
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [timeRemaining, hasAnswered]);
-
-  const setupRealtimeSubscription = () => {
     const channel = supabase
       .channel(`player-game-${sessionId}`)
       .on(
@@ -60,109 +170,45 @@ const PlayerGame = () => {
           filter: `id=eq.${sessionId}`
         },
         (payload) => {
-          console.log('Game session update received:', payload);
-          const newData = payload.new as any;
-          if (newData.status === "ended") {
-            setGameStatus("ended");
-            setTimeout(() => navigate("/play/stats"), 3000);
-          } else if (newData.status === "active") {
-            // Game has started, fetch the current question
-            setGameStatus("active");
-            fetchCurrentQuestion();
-            setHasAnswered(false);
-            setShowResult(false);
-            setSelectedAnswer(null);
-          } else if (newData.current_question_id) {
-            // New question available
-            fetchCurrentQuestion();
-            setHasAnswered(false);
-            setShowResult(false);
-            setSelectedAnswer(null);
-          }
+          console.log('Realtime update received:', payload);
+          fetchCurrentQuestion();
         }
       )
       .subscribe((status) => {
-        console.log('Player game subscription status:', status);
+        console.log('Subscription status:', status);
       });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  };
+  }, [sessionId, fetchCurrentQuestion, fetchMyScore]);
 
-  const fetchCurrentQuestion = async () => {
-    try {
-      const { data: session } = await supabase
-        .from("game_sessions")
-        .select("current_question_id, status")
-        .eq("id", sessionId)
-        .single();
+  // Polling fallback - always poll when in lobby or no question loaded
+  useEffect(() => {
+    const shouldPoll = gameStatus === "lobby" || (gameStatus === "active" && !currentQuestion);
 
-      if (!session) return;
-
-      setGameStatus(session.status);
-
-      if (session.status === "lobby") {
-        // Still in lobby, clear question
-        setCurrentQuestion(null);
-        return;
-      }
-
-      if (!session.current_question_id) {
-        setCurrentQuestion(null);
-        return;
-      }
-
-      const { data: questionData, error } = await supabase
-        .from("questions")
-        .select("*")
-        .eq("id", session.current_question_id)
-        .single();
-
-      if (error) throw error;
-      
-      setCurrentQuestion(questionData);
-      setTimeRemaining(questionData.time_limit_seconds);
-
-      // Check if we already answered this question
-      const { data: existingAnswer } = await supabase
-        .from("player_answers")
-        .select("*")
-        .eq("game_session_id", sessionId)
-        .eq("question_id", questionData.id)
-        .eq("player_id", user?.id)
-        .maybeSingle();
-
-      if (existingAnswer) {
-        setHasAnswered(true);
-        setShowResult(true);
-        setSelectedAnswer(existingAnswer.selected_answer);
-        setIsCorrect(existingAnswer.is_correct);
-      }
-    } catch (error: any) {
-      console.error("Error fetching question:", error);
+    if (shouldPoll) {
+      const pollInterval = setInterval(() => {
+        console.log('Polling... Status:', gameStatus, 'Has Question:', !!currentQuestion);
+        fetchCurrentQuestion();
+        fetchMyScore();
+      }, 1500);
+      return () => clearInterval(pollInterval);
     }
-  };
+  }, [gameStatus, currentQuestion, fetchCurrentQuestion, fetchMyScore]);
 
-  const fetchMyScore = async () => {
-    try {
-      const { data } = await supabase
-        .from("player_sessions")
-        .select("total_points")
-        .eq("game_session_id", sessionId)
-        .eq("player_id", user?.id)
-        .single();
-
-      if (data) {
-        setMyScore(data.total_points || 0);
-      }
-    } catch (error) {
-      console.error("Error fetching score:", error);
+  // Timer countdown
+  useEffect(() => {
+    if (timeRemaining > 0 && !hasAnswered && currentQuestion) {
+      const timer = setInterval(() => {
+        setTimeRemaining(prev => Math.max(0, prev - 1));
+      }, 1000);
+      return () => clearInterval(timer);
     }
-  };
+  }, [timeRemaining, hasAnswered, currentQuestion]);
 
   const handleAnswerSelect = async (answer: string) => {
-    if (hasAnswered || !currentQuestion) return;
+    if (hasAnswered || !currentQuestion || !user?.id) return;
 
     setSelectedAnswer(answer);
     setHasAnswered(true);
@@ -171,14 +217,15 @@ const PlayerGame = () => {
     const correct = answer.toLowerCase() === currentQuestion.correct_answer.toLowerCase();
     setIsCorrect(correct);
 
-    // Calculate points: base 100 points if correct, bonus points for speed
-    const points = correct ? Math.max(50, 100 - timeTaken * 2) : 0;
+    // Kahoot-style points
+    const points = calculatePoints(correct, timeTaken, currentQuestion.time_limit_seconds);
+    setLastPointsEarned(points);
 
     try {
       // Record answer
-      await supabase.from("player_answers").insert({
+      const { error: answerError } = await supabase.from("player_answers").insert({
         game_session_id: sessionId,
-        player_id: user?.id,
+        player_id: user.id,
         question_id: currentQuestion.id,
         selected_answer: answer,
         is_correct: correct,
@@ -186,12 +233,16 @@ const PlayerGame = () => {
         points_earned: points
       });
 
+      if (answerError) {
+        console.error('Error recording answer:', answerError);
+      }
+
       // Update player session points
       const { data: currentSession } = await supabase
         .from("player_sessions")
         .select("total_points")
         .eq("game_session_id", sessionId)
-        .eq("player_id", user?.id)
+        .eq("player_id", user.id)
         .single();
 
       const newTotal = (currentSession?.total_points || 0) + points;
@@ -200,36 +251,53 @@ const PlayerGame = () => {
         .from("player_sessions")
         .update({ total_points: newTotal })
         .eq("game_session_id", sessionId)
-        .eq("player_id", user?.id);
+        .eq("player_id", user.id);
 
       setMyScore(newTotal);
       setShowResult(true);
 
-      toast({
-        title: correct ? "Correct!" : "Incorrect",
-        description: correct ? `+${points} points!` : "Better luck next time",
-        variant: correct ? "default" : "destructive",
-      });
+      if (correct) {
+        toast({
+          title: `🎉 Correct! +${points} points`,
+          description: points >= 800 ? "Lightning fast!" : points >= 600 ? "Quick answer!" : "Nice job!",
+        });
+      } else {
+        toast({
+          title: "Incorrect",
+          description: `The answer was ${currentQuestion.correct_answer.toUpperCase()}`,
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error("Error submitting answer:", error);
     }
   };
 
+  // Lobby waiting screen
   if (gameStatus === "lobby") {
     return (
       <div className="min-h-screen bg-gradient-hero wood-texture flex items-center justify-center p-4">
         <Card className="max-w-md w-full p-8 leather-texture border-2 border-primary/40 text-center">
+          <div className="animate-pulse mb-6">
+            <Zap className="h-16 w-16 text-secondary mx-auto" />
+          </div>
           <h2 className="text-3xl font-bold text-secondary mb-4">
-            Game Starting Soon!
+            Get Ready!
           </h2>
-          <p className="text-muted-foreground">
-            The host will start the game shortly. Get ready!
+          <p className="text-muted-foreground mb-4">
+            The host will start the game shortly.
           </p>
+          <div className="flex justify-center gap-2">
+            <span className="w-3 h-3 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+            <span className="w-3 h-3 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+            <span className="w-3 h-3 bg-secondary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+          </div>
         </Card>
       </div>
     );
   }
 
+  // Game ended screen
   if (gameStatus === "ended") {
     return (
       <div className="min-h-screen bg-gradient-hero wood-texture flex items-center justify-center p-4">
@@ -249,16 +317,22 @@ const PlayerGame = () => {
     );
   }
 
+  // Waiting for question
   if (!currentQuestion) {
     return (
       <div className="min-h-screen bg-gradient-hero wood-texture flex items-center justify-center p-4">
         <Card className="max-w-md w-full p-8 leather-texture border-2 border-primary/40 text-center">
-          <p className="text-foreground">Waiting for next question...</p>
+          <Clock className="h-12 w-12 text-accent mx-auto mb-4 animate-spin" />
+          <p className="text-foreground text-lg">Loading question...</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            If this persists, the host may need to advance the game.
+          </p>
         </Card>
       </div>
     );
   }
 
+  // Main game UI
   return (
     <div className="min-h-screen bg-gradient-hero wood-texture p-4">
       <div className="max-w-2xl mx-auto space-y-4">
@@ -269,9 +343,11 @@ const PlayerGame = () => {
             <p className="text-2xl font-bold text-foreground">{myScore}</p>
             <p className="text-xs text-muted-foreground">Your Score</p>
           </Card>
-          <Card className="p-4 bg-card/80 border-primary/40 text-center">
-            <Clock className="h-6 w-6 text-accent mx-auto mb-2" />
-            <p className="text-2xl font-bold text-foreground">{timeRemaining}</p>
+          <Card className={`p-4 bg-card/80 border-primary/40 text-center ${timeRemaining <= 5 ? 'animate-pulse border-destructive' : ''}`}>
+            <Clock className={`h-6 w-6 mx-auto mb-2 ${timeRemaining <= 5 ? 'text-destructive' : 'text-accent'}`} />
+            <p className={`text-2xl font-bold ${timeRemaining <= 5 ? 'text-destructive' : 'text-foreground'}`}>
+              {timeRemaining}
+            </p>
             <p className="text-xs text-muted-foreground">Seconds Left</p>
           </Card>
         </div>
@@ -282,39 +358,47 @@ const PlayerGame = () => {
             {currentQuestion.question_text}
           </h2>
 
-          <div className="space-y-3">
-            {['a', 'b', 'c', 'd'].map((option) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {['a', 'b', 'c', 'd'].map((option, index) => {
               const optionKey = `option_${option}` as keyof Question;
               const isSelected = selectedAnswer?.toLowerCase() === option;
               const isCorrectAnswer = showResult && option === currentQuestion.correct_answer.toLowerCase();
               const isWrongAnswer = showResult && isSelected && !isCorrectAnswer;
+
+              // Kahoot-style colors
+              const colors = [
+                'hover:bg-red-500/20 hover:border-red-500',
+                'hover:bg-blue-500/20 hover:border-blue-500',
+                'hover:bg-yellow-500/20 hover:border-yellow-500',
+                'hover:bg-green-500/20 hover:border-green-500'
+              ];
 
               return (
                 <Button
                   key={option}
                   onClick={() => handleAnswerSelect(option)}
                   disabled={hasAnswered}
-                  className={`w-full p-6 text-lg justify-start transition-all ${
+                  className={`w-full p-6 text-lg justify-start transition-all h-auto min-h-[80px] ${
                     isCorrectAnswer
-                      ? 'bg-primary/20 border-2 border-primary'
+                      ? 'bg-green-500/30 border-2 border-green-500'
                       : isWrongAnswer
-                      ? 'bg-destructive/20 border-2 border-destructive'
+                      ? 'bg-red-500/30 border-2 border-red-500'
                       : isSelected
-                      ? 'bg-secondary/20 border-2 border-secondary'
-                      : 'bg-muted hover:bg-muted/80'
+                      ? 'bg-secondary/30 border-2 border-secondary'
+                      : `bg-muted/50 border-2 border-border ${!hasAnswered ? colors[index] : ''}`
                   }`}
                   variant="outline"
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span>
+                    <span className="text-left">
                       <span className="font-bold mr-3">{option.toUpperCase()}.</span>
                       {currentQuestion[optionKey] as string}
                     </span>
                     {showResult && isCorrectAnswer && (
-                      <CheckCircle2 className="h-6 w-6 text-primary" />
+                      <CheckCircle2 className="h-6 w-6 text-green-500 flex-shrink-0 ml-2" />
                     )}
                     {showResult && isWrongAnswer && (
-                      <XCircle className="h-6 w-6 text-destructive" />
+                      <XCircle className="h-6 w-6 text-red-500 flex-shrink-0 ml-2" />
                     )}
                   </div>
                 </Button>
@@ -324,9 +408,19 @@ const PlayerGame = () => {
 
           {showResult && (
             <div className="mt-6 text-center">
-              <p className={`text-xl font-bold ${isCorrect ? 'text-primary' : 'text-destructive'}`}>
-                {isCorrect ? '✓ Correct!' : '✗ Incorrect'}
-              </p>
+              {isCorrect ? (
+                <div className="space-y-2">
+                  <p className="text-2xl font-bold text-green-500">🎉 Correct!</p>
+                  <p className="text-xl text-secondary">+{lastPointsEarned} points</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xl font-bold text-red-500">✗ Incorrect</p>
+                  <p className="text-muted-foreground">
+                    Correct answer: {currentQuestion.correct_answer.toUpperCase()}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </Card>
@@ -334,7 +428,7 @@ const PlayerGame = () => {
         {hasAnswered && !showResult && (
           <Card className="p-4 bg-card/80 border-primary/40 text-center">
             <p className="text-muted-foreground">
-              Answer submitted! Waiting for round to end...
+              Answer locked in! Waiting for time to expire...
             </p>
           </Card>
         )}
