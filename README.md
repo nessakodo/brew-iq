@@ -35,39 +35,39 @@ Add finalized screenshots to the sections below.
 ### **Player View**
 
 **Figure 1. Player Join Screen**  
-`![Player Join Screen](src/assets/player-game-code.png)`
+![Player Join Screen](src/assets/player-game-code.png)
 
 **Figure 2. In Game Question Card**  
-`![Player Question Card](src/assets/player-question.png)`
+![Player Question Card](src/assets/player-question.png)
 
 **Figure 3. Inter Question Loading Screen**  
-`![Loading Screen](src/assets/loading.png)`
+![Loading Screen](src/assets/loading.png)
 
 ---
 
 ### **Host View**
 
 **Figure 4. Event Overview (Pre Game)**  
-`![Host Event Overview](src/assets/host-dashboard.png)`
+![Host Event Overview](src/assets/host-dashboard.png)
 
 **Figure 5. Game Code Countdown (Pre Game)**  
-`![Host Game Code](src/assets/game-code.png)`
+![Host Game Code](src/assets/game-code.png)
 
 **Figure 6. Host Live Question + Leaderboard**  
-`![Host Live](src/assets/host-question.png)`
+![Host Live](src/assets/host-question.png)
 
 ---
 
 ### **Admin View**
 
 **Figure 7. AI Trivia Generator**  
-`![AI Trivia Generator](src/assets/ai-trivia-generator.png)`
+![AI Trivia Generator](src/assets/ai-trivia-generator.png)
 
 **Figure 8. Trivia Library**  
-`![Trivia Library](src/assets/presets.png)`
+![Trivia Library](src/assets/presets.png)
 
 **Figure 9. User Management Panel**  
-`![User Management Panel](src/assets/admin-dash.png)`
+![User Management Panel](src/assets/admin-dash.png)
 
 ---
 
