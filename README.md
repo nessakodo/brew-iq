@@ -1,86 +1,129 @@
-# BrewIQ - Real-Time Trivia Platform
+# BrewIQ Real Time Trivia Demo
 
-## Project Overview
+## Overview
 
-BrewIQ is a comprehensive real-time trivia platform designed for bars and entertainment venues, featuring AI-powered content generation, live gameplay, and marketing automation.
+BrewIQ is a real time bar trivia platform designed around three distinct user experiences:
+
+1. **Player View**  
+2. **Host View**  
+3. **Admin View**
+
+This repository supports the **demo build** described in the BrewIQ Demo Guide.  
+All UI flows and screenshots shown there are **representative**, while full system functionality is still being implemented according to the project timeline and client feedback.
+
+---
+
+## Demo Walkthrough Reference
+
+See the Demo Guide (BrewIQ Bar Trivia Demo Guide + User Stories) for detailed explanations of:
+
+- Player onboarding  
+- Question card interaction  
+- Loading states between questions  
+- Host event setup  
+- Host live controls and leaderboard  
+- Admin content generation  
+- Admin trivia library  
+- Admin account management  
+
+---
+
+## Screenshots
+
+Add finalized screenshots to the sections below.
+
+### **Player View**
+
+**Figure 1. Player Join Screen**  
+`![Player Join Screen](src/assets/player-game-code.png)`
+
+**Figure 2. In Game Question Card**  
+`![Player Question Card](src/assets/player-question.png)`
+
+**Figure 3. Inter Question Loading Screen**  
+`![Loading Screen](src/assets/loading.png)`
+
+---
+
+### **Host View**
+
+**Figure 4. Event Overview (Pre Game)**  
+`![Host Event Overview](src/assets/host-dashboard.png)`
+
+**Figure 5. Game Code Countdown (Pre Game)**  
+`![Host Game Code](src/assets/game-code.png)`
+
+**Figure 6. Host Live Question + Leaderboard**  
+`![Host Live](src/assets/host-question.png)`
+
+---
+
+### **Admin View**
+
+**Figure 7. AI Trivia Generator**  
+`![AI Trivia Generator](src/assets/ai-trivia-generator.png)`
+
+**Figure 8. Trivia Library**  
+`![Trivia Library](src/assets/presets.png)`
+
+**Figure 9. User Management Panel**  
+`![User Management Panel](src/assets/admin-dash.png)`
+
+---
 
 ## Getting Started
 
-### Prerequisites
+### **Requirements**
 
-- Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Node.js + npm  
+- Git  
 
-### Installation & Development
+---
+
+### **Install and Run**
 
 ```sh
-# Step 1: Clone the repository
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory
-cd bar-trivia-maestro
-
-# Step 3: Install dependencies
+git clone https://github.com/nessakodo/brew-iq.git
+cd brew-iq
 npm install
-
-# Step 4: Set up environment variables
-# Copy .env.example to .env and fill in your Supabase credentials
-# VITE_SUPABASE_URL=your_supabase_url
-# VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
-
-# Step 5: Start the development server
 npm run dev
-```
+````
 
-The app will be available at `http://localhost:8080` (or the port shown in your terminal).
+The app will run at the port shown in your terminal (usually `http://localhost:5173/`).
 
-### Testing in Incognito Mode
+---
 
-To test multiple user roles simultaneously:
+## Testing Player View
 
-1. Start the dev server with `npm run dev`
-2. Open multiple incognito/private browser windows
+To test the player interface in a multi user environment:
+
+1. Run the dev server
+
+   ```sh
+   npm run dev
+   ```
+2. Open multiple browser windows (or incognito sessions)
 3. Navigate to the local URL in each window
-4. Sign in with different user accounts (admin, host, player) in each window
+4. Enter the same join code on each Player Join Screen
+5. Observe synced question progression once the host advances the game
 
-## Technologies Used
+**Note: Some host and admin flows may be partially stubbed during demo phase.**
 
-This project is built with:
 
-- **Vite** - Fast build tool and dev server
-- **TypeScript** - Type-safe JavaScript
-- **React** - UI framework
-- **shadcn-ui** - Component library
-- **Tailwind CSS** - Utility-first CSS
-- **Supabase** - Backend as a Service (Database, Auth, Realtime)
+---
 
 ## Project Structure
 
-```
+```text
 src/
-├── components/       # Reusable UI components
-│   ├── admin/       # Admin dashboard components
-│   ├── player/      # Player-facing components
-│   └── ui/          # shadcn-ui components
-├── pages/           # Page components
-├── contexts/        # React contexts (Auth, etc.)
-├── hooks/           # Custom React hooks
-├── integrations/    # External service integrations (Supabase)
-└── lib/             # Utility functions
+  components/
+    player/     # Player facing UI
+    host/       # Host controls
+    admin/      # Admin dashboard
+    ui/         # Shared UI components
+  pages/
+  contexts/
+  hooks/
+  integrations/
+  lib/
 ```
-
-## Deployment
-
-Build the project for production:
-
-```sh
-npm run build
-```
-
-The built files will be in the `dist/` directory and can be deployed to any static hosting service.
-
-## Contributing
-
-1. Create a feature branch
-2. Make your changes
-3. Test thoroughly
-4. Submit a pull request
