@@ -45,9 +45,9 @@ export const AITriviaGenerator = ({ onTriviaGenerated }: AITriviaGeneratorProps 
         Each question should have 4 multiple choice options (A, B, C, D) and indicate the correct answer.
         Format: Question text | Option A | Option B | Option C | Option D | Correct Answer (letter only)`;
 
-      // Call AI generation edge function
-      const { data, error } = await supabase.functions.invoke('generate-trivia', {
-        body: { prompt, title, theme, difficulty, questionCount: parseInt(questionCount) }
+      // Call AI generation edge function (using Gemini - FREE!)
+      const { data, error } = await supabase.functions.invoke('generate-trivia-gemini', {
+        body: { title, theme, difficulty, questionCount: parseInt(questionCount) }
       });
 
       if (error) throw error;
