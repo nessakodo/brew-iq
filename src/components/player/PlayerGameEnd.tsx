@@ -60,11 +60,11 @@ export const PlayerGameEnd = ({
   };
 
   const getRankMessage = (rank: number, total: number) => {
-    if (rank === 1) return "🎉 You're the Champion! 🎉";
-    if (rank === 2) return "⭐ Runner-Up! ⭐";
-    if (rank === 3) return "🏅 Third Place! 🏅";
-    if (rank <= total / 2) return "👏 Great Job! 👏";
-    return "👍 Nice Try! 👍";
+    if (rank === 1) return "You're the Champion!";
+    if (rank === 2) return "Runner-Up!";
+    if (rank === 3) return "Third Place!";
+    if (rank <= total / 2) return "Great Job!";
+    return "Nice Try!";
   };
 
   return (
