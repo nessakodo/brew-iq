@@ -52,9 +52,19 @@ export const AITriviaGenerator = ({ onTriviaGenerated }: AITriviaGeneratorProps 
 
       if (error) throw error;
 
+      // Check if the response contains an error (even with 2xx status)
+      if (data && 'error' in data) {
+        throw new Error(data.error as string);
+      }
+
+      // Verify success
+      if (!data || !data.success) {
+        throw new Error('Failed to generate trivia set');
+      }
+
       toast({
         title: "Trivia Set Generated!",
-        description: `Successfully created "${title}" with ${questionCount} questions`,
+        description: `Successfully created "${title}" with ${data.question_count || questionCount} questions`,
       });
 
       // Reset form

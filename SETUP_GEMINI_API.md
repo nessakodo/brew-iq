@@ -22,23 +22,31 @@ Google's Gemini API is **completely FREE** with generous limits (1500 requests/d
 
 ### Install Supabase CLI (if you haven't)
 
+**On macOS (recommended):**
 ```bash
-npm install -g supabase
+brew install supabase/tap/supabase
 ```
 
-### Login to Supabase
+**On other platforms:** See https://github.com/supabase/cli#install-the-cli
+
+### Login to Supabase (REQUIRED!)
+
+**You MUST login first before deploying!** This will open your browser:
 
 ```bash
 supabase login
 ```
 
+Follow the prompts to authenticate with your Supabase account.
+
 ### Link to Your Project
 
 ```bash
+cd /Users/nessakodo/brew-iq
 supabase link --project-ref pwxtlbpfydpqolrliqux
 ```
 
-### Set the Gemini API Key Secret
+**Note:** If you manually added the API key via the dashboard, you still need to set it via CLI for the function to access it:
 
 ```bash
 supabase secrets set GEMINI_API_KEY=YOUR_API_KEY_HERE
@@ -98,9 +106,11 @@ Compare to OpenAI:
 → Make sure you ran: `supabase secrets set GEMINI_API_KEY=...`
 → Verify with: `supabase secrets list`
 
-**"Failed to deploy"**
+**"Failed to deploy" or "Access token not provided"**
+→ **You MUST login first!** Run: `supabase login`
 → Make sure you're in the project directory: `/Users/nessakodo/brew-iq`
 → Make sure you ran `supabase link` first
+→ If you manually added the secret via dashboard, you still need to set it via CLI: `supabase secrets set GEMINI_API_KEY=...`
 
 **"Generation failed"**
 → Check Supabase Dashboard → Edge Functions → generate-trivia-gemini → Logs
@@ -126,14 +136,20 @@ Run these commands:
 ```bash
 # 1. Get your Gemini API key from: https://aistudio.google.com/app/apikey
 
-# 2. Set it in Supabase
+# 2. Login to Supabase (REQUIRED - opens browser)
+supabase login
+
+# 3. Link to your project
+cd /Users/nessakodo/brew-iq
+supabase link --project-ref ywsvbhzdfsqxubftnvsz
+
+# 4. Set the API key secret
 supabase secrets set GEMINI_API_KEY=YOUR_KEY_HERE
 
-# 3. Deploy the function
-cd /Users/nessakodo/brew-iq
+# 5. Deploy the function
 supabase functions deploy generate-trivia-gemini --no-verify-jwt
 
-# 4. Test in your app!
+# 6. Test in your app!
 ```
 
 **Get API Key**: https://aistudio.google.com/app/apikey 🎯

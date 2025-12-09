@@ -18,7 +18,12 @@ serve(async (req) => {
     );
 
     const { prompt, title, theme, difficulty, questionCount } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    
+    // Use Gemini API directly (migrated from Lovable)
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!geminiKey) {
+      throw new Error("Gemini API key not configured");
+    }
 
     // Smart tag extraction: select 1-2 key themes from a comma-separated list
     const extractSmartTags = (themeString: string): string => {
@@ -30,32 +35,46 @@ serve(async (req) => {
 
     const smartTheme = extractSmartTags(theme);
 
-    // Generate questions using AI - emphasize EXACTLY the requested count
-    const enhancedPrompt = `${prompt}
+    // Generate questions using Gemini API - emphasize EXACTLY the requested count
+    const enhancedPrompt = prompt || `Generate exactly ${questionCount} multiple choice trivia questions about ${theme} at ${difficulty} difficulty level.
 
 CRITICAL: You MUST generate EXACTLY ${questionCount} questions. Not ${questionCount - 1}, not ${questionCount + 1}, but EXACTLY ${questionCount} questions.
-Count your questions before responding to ensure you have exactly ${questionCount}.`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+For each question, provide the format: QUESTION_TEXT|OPTION_A|OPTION_B|OPTION_C|OPTION_D|CORRECT_LETTER
+Separate each question with a newline. Make sure options are plausible and the correct answer is clearly indicated (A, B, C, or D).`;
+
+    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: "You are a trivia question generator. Generate exactly the requested number of questions in this exact format for each question: QUESTION_TEXT|OPTION_A|OPTION_B|OPTION_C|OPTION_D|CORRECT_LETTER. Separate each question with a newline. Make sure options are plausible and the correct answer is clearly indicated (A, B, C, or D). CRITICAL: Generate the EXACT number of questions requested."
-          },
-          { role: "user", content: enhancedPrompt }
-        ],
+        contents: [{
+          parts: [{
+            text: enhancedPrompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.8,
+          maxOutputTokens: 8192,
+        }
       }),
     });
 
+    if (!aiResponse.ok) {
+      const error = await aiResponse.json();
+      throw new Error(`Gemini API error: ${error.error?.message || 'Unknown error'}`);
+    }
+
     const aiData = await aiResponse.json();
-    const generatedText = aiData.choices[0].message.content;
+    
+    // Check if Gemini returned an error
+    if (!aiData.candidates || !aiData.candidates[0] || !aiData.candidates[0].content) {
+      console.error('Gemini API response error:', aiData);
+      throw new Error(`Gemini API error: ${aiData.error?.message || 'Invalid response format'}`);
+    }
+    
+    const generatedText = aiData.candidates[0].content.parts[0].text;
 
     console.log(`Requested ${questionCount} questions, AI generated text with ${generatedText.trim().split("\n").filter((l: string) => l.trim()).length} lines`);
 

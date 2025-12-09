@@ -18,7 +18,12 @@ serve(async (req) => {
     );
 
     const { eventId } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    
+    // Use Gemini API directly (migrated from Lovable)
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    if (!geminiKey) {
+      throw new Error("Gemini API key not configured");
+    }
 
     // Fetch event details
     const { data: event, error: eventError } = await supabase
@@ -29,26 +34,41 @@ serve(async (req) => {
 
     if (eventError) throw eventError;
 
-    // Generate social media post using AI
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Generate social media post using Gemini API
+    const prompt = `Generate an engaging social media post for this trivia event: "${event.title}" on ${event.event_date} at ${event.event_time}. Theme: ${event.theme || 'General'}. Keep it under 200 characters, fun, and include relevant emojis.`;
+
+    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "user",
-            content: `Generate an engaging social media post for this trivia event: "${event.title}" on ${event.event_date} at ${event.event_time}. Theme: ${event.theme || 'General'}. Keep it under 200 characters, fun, and include relevant emojis.`
-          }
-        ],
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.9,
+          maxOutputTokens: 500,
+        }
       }),
     });
 
+    if (!aiResponse.ok) {
+      const error = await aiResponse.json();
+      throw new Error(`Gemini API error: ${error.error?.message || 'Unknown error'}`);
+    }
+
     const aiData = await aiResponse.json();
-    const socialPost = aiData.choices[0].message.content;
+    
+    // Check if Gemini returned an error
+    if (!aiData.candidates || !aiData.candidates[0] || !aiData.candidates[0].content) {
+      console.error('Gemini API response error:', aiData);
+      throw new Error(`Gemini API error: ${aiData.error?.message || 'Invalid response format'}`);
+    }
+    
+    const socialPost = aiData.candidates[0].content.parts[0].text;
 
     // Store marketing data
     const { error: updateError } = await supabase
