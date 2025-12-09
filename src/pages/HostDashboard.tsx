@@ -86,11 +86,27 @@ const HostDashboard = () => {
 
       console.log('Fetching events from', pastDate, 'to future');
 
-      // Fetch events from the past week onwards (so you can see recent events and upcoming ones)
-      const { data, error } = await supabase
+      // Fetch events assigned to this host or all events if admin
+      // Include events from past week onwards
+      const { data: userRoles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user?.id)
+        .single();
+      
+      const isAdmin = userRoles?.role === 'admin';
+      
+      let query = supabase
         .from("events")
         .select("*, trivia_sets(title)")
-        .gte("event_date", pastDate)
+        .gte("event_date", pastDate);
+      
+      // If not admin, only show events assigned to this host
+      if (!isAdmin) {
+        query = query.eq("assigned_host_id", user?.id);
+      }
+      
+      const { data, error } = await query
         .order("event_date", { ascending: true })
         .order("event_time", { ascending: true });
 

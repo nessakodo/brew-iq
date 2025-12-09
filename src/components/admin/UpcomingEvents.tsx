@@ -34,24 +34,36 @@ export const UpcomingEvents = () => {
 
   const fetchEvents = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("events")
-      .select("*")
-      .gte("event_date", new Date().toISOString().split('T')[0])
-      .order("event_date", { ascending: true })
-      .order("event_time", { ascending: true });
+    try {
+      // Fetch all events (past and future) - admin should see everything
+      const { data, error } = await supabase
+        .from("events")
+        .select("*")
+        .order("event_date", { ascending: true })
+        .order("event_time", { ascending: true });
 
-    if (error) {
-      console.error("Error fetching events:", error);
+      if (error) {
+        console.error("Error fetching events:", error);
+        console.error("Error details:", JSON.stringify(error, null, 2));
+        toast({
+          title: "Error",
+          description: `Failed to load events: ${error.message}`,
+          variant: "destructive",
+        });
+      } else {
+        console.log("Fetched events:", data?.length || 0, "events");
+        setEvents(data || []);
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching events:", err);
       toast({
         title: "Error",
-        description: "Failed to load events",
+        description: "Unexpected error loading events",
         variant: "destructive",
       });
-    } else {
-      setEvents(data || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -104,18 +116,49 @@ export const UpcomingEvents = () => {
         description: "Social post and banner ready for download",
       });
 
-      // Show download dialog with results
+      // Download social post text file
       if (data?.socialPost) {
         const blob = new Blob([data.socialPost], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${event.title}-social-post.txt`;
+        a.download = `${event.title.replace(/[^a-z0-9]/gi, '_')}-social-post.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast({
+          title: "Social Post Downloaded",
+          description: "Social media post saved as .txt file",
+        });
+      }
+
+      // Download SVG banner visual
+      if (data?.svgBanner) {
+        const blob = new Blob([data.svgBanner], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${event.title.replace(/[^a-z0-9]/gi, '_')}-banner.svg`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast({
+          title: "Banner Visual Downloaded",
+          description: "SVG banner saved",
+        });
+      }
+
+      // Download image description/prompt for external image generation
+      if (data?.imageDescription || data?.imagePrompt) {
+        const imageContent = `Image Description:\n${data.imageDescription || ''}\n\nImage Generation Prompt:\n${data.imagePrompt || ''}\n\nEvent Details:\nTitle: ${event.title}\nDate: ${event.event_date}\nTime: ${event.event_time}\nTheme: ${event.theme || 'General'}`;
+        const blob = new Blob([imageContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${event.title.replace(/[^a-z0-9]/gi, '_')}-image-prompt.txt`;
         a.click();
         URL.revokeObjectURL(url);
       }
 
-      // Show banner code
+      // Copy banner code to clipboard
       if (data?.bannerCode) {
         navigator.clipboard.writeText(data.bannerCode);
         toast({
