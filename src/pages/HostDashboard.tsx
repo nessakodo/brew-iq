@@ -26,7 +26,7 @@ interface PastGame {
   game_code: string;
   created_at: string;
   ended_at: string | null;
-  event: {
+  events: {
     title: string;
   } | null;
 }
@@ -336,7 +336,7 @@ const HostDashboard = () => {
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h3 className="text-lg font-bold text-foreground">
-                            {(game.event as any)?.title || 'Unknown Event'}
+                            {game.events?.title || 'Unknown Event'}
                           </h3>
                           <p className="text-sm text-muted-foreground">
                             Code: <span className="font-mono font-bold">{game.game_code}</span>

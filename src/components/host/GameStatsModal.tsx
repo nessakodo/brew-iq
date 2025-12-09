@@ -59,13 +59,14 @@ export const GameStatsModal = ({ isOpen, onClose, gameSessionId }: GameStatsModa
 
       if (!session) return;
 
-      // Get all player sessions for this game
+      // Get all player sessions for this game with their game-specific usernames
       const { data: playerSessions } = await supabase
         .from("player_sessions")
-        .select("player_id")
+        .select("player_id, display_name")
         .eq("game_session_id", gameSessionId);
 
       const playerIds = playerSessions?.map(p => p.player_id) || [];
+      const playerNameMap = new Map(playerSessions?.map(p => [p.player_id, p.display_name]) || []);
 
       // Get all answers for this game
       const { data: answers } = await supabase
@@ -90,7 +91,7 @@ export const GameStatsModal = ({ isOpen, onClose, gameSessionId }: GameStatsModa
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5);
 
-      // Fetch player profiles
+      // Fetch player profiles as fallback
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, display_name, email")
@@ -100,7 +101,8 @@ export const GameStatsModal = ({ isOpen, onClose, gameSessionId }: GameStatsModa
 
       const top5 = sortedPlayers.map(([playerId, points], index) => ({
         player_id: playerId,
-        display_name: profileMap.get(playerId)?.display_name ||
+        display_name: playerNameMap.get(playerId) ||
+                     profileMap.get(playerId)?.display_name ||
                      profileMap.get(playerId)?.email?.split('@')[0] ||
                      'Unknown Player',
         total_points: points,

@@ -243,7 +243,7 @@ const Auth = () => {
 
   if (resetMode) {
     return (
-      <div className="min-h-screen bg-gradient-hero wood-texture flex items-center justify-center p-4">
+      <div className="min-h-screen wood-texture flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8 shadow-card">
           <div className="text-center mb-8">
             <img
@@ -292,7 +292,7 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-hero p-4 wood-texture">
+    <div className="min-h-screen flex items-center justify-center p-4 wood-texture">
       <Card className="w-full max-w-md p-8 shadow-card border-2 border-primary/40 relative overflow-hidden leather-texture">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-accent"></div>
         

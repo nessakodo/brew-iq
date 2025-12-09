@@ -231,8 +231,17 @@ const PlayerGame = () => {
       setFinalRank(rank || sortedPlayers.length + 1);
       setFinalTotalPlayers(playerPoints.size);
 
-      // Fetch top 5 players with names
+      // Fetch top 5 players with names from player_sessions (game-specific names)
       const top5PlayerIds = sortedPlayers.slice(0, 5).map(([id]) => id);
+      const { data: playerSessions } = await supabase
+        .from("player_sessions")
+        .select("player_id, display_name")
+        .eq("game_session_id", sessionId)
+        .in("player_id", top5PlayerIds);
+
+      const sessionNameMap = new Map(playerSessions?.map(p => [p.player_id, p.display_name]) || []);
+
+      // Fetch profiles as fallback
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, display_name, email")
@@ -244,7 +253,7 @@ const PlayerGame = () => {
         const profile = profileMap.get(id);
         return {
           player_id: id,
-          display_name: profile?.display_name || profile?.email?.split('@')[0] || 'Unknown Player',
+          display_name: sessionNameMap.get(id) || profile?.display_name || profile?.email?.split('@')[0] || 'Unknown Player',
           total_points: points,
           rank: index + 1
         };
@@ -621,7 +630,7 @@ const PlayerGame = () => {
                   key={option}
                   onClick={() => handleAnswerSelect(option)}
                   disabled={hasAnswered}
-                  className={`w-full p-4 sm:p-6 text-base sm:text-lg justify-start transition-all h-auto min-h-[72px] sm:min-h-[80px] ${
+                  className={`w-full p-3 sm:p-4 md:p-6 text-sm sm:text-base md:text-lg justify-start transition-all h-auto min-h-[60px] sm:min-h-[72px] ${
                     isCorrectAnswer
                       ? 'celtic-answer-btn-correct font-bold'
                       : isWrongAnswer
@@ -632,18 +641,18 @@ const PlayerGame = () => {
                   }`}
                   variant="outline"
                 >
-                  <div className="flex items-center justify-between w-full gap-2 sm:gap-3">
-                    <span className="text-left flex-1 min-w-0 break-words">
-                      <span className="font-bold mr-2 sm:mr-3">{option.toUpperCase()}.</span>
-                      <span className="break-words hyphens-auto">
+                  <div className="flex items-start sm:items-center justify-between w-full gap-2 sm:gap-3">
+                    <span className="text-left flex-1 min-w-0 break-words leading-snug">
+                      <span className="font-bold mr-1 sm:mr-2">{option.toUpperCase()}.</span>
+                      <span className="break-words hyphens-auto leading-tight">
                         {currentQuestion[optionKey] as string}
                       </span>
                     </span>
                     {showResult && isCorrectAnswer && (
-                      <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 flex-shrink-0" />
+                      <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 flex-shrink-0 mt-0.5 sm:mt-0" />
                     )}
                     {showResult && isWrongAnswer && (
-                      <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-500 flex-shrink-0" />
+                      <XCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-500 flex-shrink-0 mt-0.5 sm:mt-0" />
                     )}
                   </div>
                 </Button>

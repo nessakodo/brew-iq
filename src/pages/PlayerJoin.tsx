@@ -120,17 +120,18 @@ const PlayerJoin = () => {
         return;
       }
 
-      // Create new player session
+      // Create new player session with display name for this game
       const { error: joinError } = await supabase
         .from("player_sessions")
         .insert({
           player_id: user.id,
           game_session_id: session.id,
+          display_name: playerName.trim(),
         });
 
       if (joinError) throw joinError;
 
-      // Update profile with display name
+      // Also update profile with display name as most recent nickname
       await supabase
         .from("profiles")
         .update({ display_name: playerName.trim() })

@@ -364,7 +364,7 @@ const GamePlay = () => {
       // Get all player sessions for this game
       const { data: playerSessions, error: sessionsError } = await supabase
         .from("player_sessions")
-        .select("player_id")
+        .select("player_id, display_name")
         .eq("game_session_id", sessionId);
 
       if (sessionsError) {
@@ -379,6 +379,9 @@ const GamePlay = () => {
       }
 
       const playerIds = playerSessions.map(p => p.player_id);
+
+      // Create a map of player_id to display_name from player_sessions
+      const playerNameMap = new Map(playerSessions.map(p => [p.player_id, p.display_name]));
 
       // Calculate points from player_answers (source of truth)
       const { data: answers, error: answersError } = await supabase
@@ -397,7 +400,7 @@ const GamePlay = () => {
         pointsMap.set(a.player_id, current + (a.points_earned || 0));
       });
 
-      // Get all player profiles
+      // Get all player profiles as fallback
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("id, display_name, email")
@@ -418,7 +421,7 @@ const GamePlay = () => {
         const profile = profileMap.get(playerId);
         return {
           player_id: playerId,
-          display_name: profile?.display_name || profile?.email?.split('@')[0] || `Player ${index + 1}`,
+          display_name: playerNameMap.get(playerId) || profile?.display_name || profile?.email?.split('@')[0] || `Player ${index + 1}`,
           total_points: pointsMap.get(playerId) || 0
         };
       }).sort((a, b) => b.total_points - a.total_points);

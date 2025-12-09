@@ -98,8 +98,8 @@ export const PlayerGameEnd = ({
             <h2 className="text-3xl font-bold text-center text-primary warm-glow mb-6 animate-in fade-in">
               Top Players
             </h2>
-            {top5Players.slice(0, 3).reverse().map((player, index) => {
-              const actualRank = 3 - index; // 3, 2, 1
+            {top5Players.slice(0, 3).reverse().map((player) => {
+              const actualRank = player.rank; // Use the actual rank from data
               const shouldShow = revealStep >= (4 - actualRank); // Show when step matches
 
               if (!shouldShow) return null;
