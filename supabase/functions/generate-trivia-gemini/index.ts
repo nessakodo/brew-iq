@@ -269,12 +269,13 @@ The response must be a JSON array of objects with this exact structure:
 
     // Validate and create trivia set (using service role bypasses RLS)
     console.log('Step 8: Creating trivia set in database...')
+    // User-generated trivia sets should NOT be presets - only the 5 predefined sets are presets
     const triviaSetData = {
       title,
       description: `AI-generated trivia about ${theme}`,
       theme,
       difficulty,
-      is_preset: true,
+      is_preset: false, // User-generated sets are NOT presets
       created_by: user.id
     }
 
