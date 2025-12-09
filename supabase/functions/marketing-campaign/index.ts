@@ -37,16 +37,16 @@ serve(async (req) => {
     // Generate social media post using Gemini API (with model discovery)
     console.log('Generating social media post...');
     
-    // Try to find available Gemini model
-    const modelsToTry = ['gemini-pro', 'gemini-1.5-pro-latest', 'gemini-1.5-flash-latest', 'gemini-1.5-pro', 'gemini-1.5-flash']
-    let socialPost = ''
-    let aiResponse
+    const modelsToTry = ['gemini-pro', 'gemini-1.5-pro-latest', 'gemini-1.5-flash-latest', 'gemini-1.5-pro', 'gemini-1.5-flash'];
+    const apiVersions = ['v1beta', 'v1'];
+    let socialPost = '';
+    let aiResponse;
     
     for (const model of modelsToTry) {
-      for (const version of ['v1beta', 'v1']) {
+      for (const version of apiVersions) {
         try {
-          const apiUrl = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${geminiKey}`
-          console.log(`Trying ${version}/${model} for social post...`)
+          const apiUrl = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${geminiKey}`;
+          console.log(`Trying ${version}/${model} for social post...`);
           
           const prompt = `Generate an engaging social media post for this trivia event: "${event.title}" on ${event.event_date} at ${event.event_time}. Theme: ${event.theme || 'General'}. Keep it under 200 characters, fun, and include relevant emojis.`;
           
@@ -75,6 +75,9 @@ serve(async (req) => {
               console.log(`✓ Successfully generated post using ${version}/${model}`);
               break;
             }
+          } else {
+            const errTxt = await aiResponse.text();
+            console.warn(`${version}/${model} failed:`, errTxt.substring(0, 200));
           }
         } catch (e) {
           console.error(`Error with ${version}/${model}:`, e);
@@ -84,8 +87,10 @@ serve(async (req) => {
       if (socialPost) break;
     }
     
+    // Fallback if Gemini models are unavailable
     if (!socialPost) {
-      throw new Error('Failed to generate social media post with any available Gemini model');
+      console.warn('Gemini generation failed; using fallback social post');
+      socialPost = `Join us for "${event.title}" on ${event.event_date} at ${event.event_time}! ${event.theme || 'Trivia night'} awaits. 🎉`;
     }
     
     // Generate image prompt for visual
@@ -93,11 +98,11 @@ serve(async (req) => {
     const imagePrompt = `Create a vibrant, engaging social media image for a trivia night event titled "${event.title}" happening on ${event.event_date} at ${event.event_time}. Theme: ${event.theme || 'General Knowledge'}. Style: Modern, fun, pub/bar atmosphere, colorful, includes text overlay space. Dimensions: 1200x630px for social media.`;
     
     // Generate image description (we'll use this for the visual)
-    let imageDescription = ''
+    let imageDescription = '';
     for (const model of modelsToTry) {
-      for (const version of ['v1beta', 'v1']) {
+      for (const version of apiVersions) {
         try {
-          const apiUrl = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${geminiKey}`
+          const apiUrl = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${geminiKey}`;
           const imgPrompt = `Describe a vibrant social media image for: "${event.title}" trivia event on ${event.event_date}. Theme: ${event.theme || 'General'}. Provide a detailed visual description suitable for image generation.`;
           
           const imgResponse = await fetch(apiUrl, {
@@ -122,6 +127,11 @@ serve(async (req) => {
         }
       }
       if (imageDescription) break;
+    }
+    
+    // Fallback description if Gemini fails
+    if (!imageDescription) {
+      imageDescription = `A stylish trivia night banner for "${event.title}" on ${event.event_date} at ${event.event_time}. Theme: ${event.theme || 'General'}. Modern pub atmosphere, warm wood tones, gold accents, space for title text.`;
     }
 
     // Store marketing data

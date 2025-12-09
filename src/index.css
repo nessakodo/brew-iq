@@ -73,6 +73,10 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
     font-family: 'Georgia', 'Times New Roman', serif;
+    min-height: 100vh;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center top;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -103,6 +107,7 @@ All colors MUST be HSL.
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
+    min-height: 100vh;
   }
 
   /* Mobile-specific wood background (phones) */
@@ -115,6 +120,10 @@ All colors MUST be HSL.
         ),
         url('/wood-background-mobile.jpg');
       background-attachment: scroll;
+      background-size: cover;
+      background-position: top center;
+      background-repeat: no-repeat;
+      min-height: 100vh;
     }
   }
 
@@ -161,6 +170,10 @@ All colors MUST be HSL.
     box-shadow:
       0 2px 8px hsl(0 0% 0% / 0.4),
       inset 0 1px 1px hsl(40 40% 45% / 0.1);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+    min-height: 3rem;
   }
 
   .celtic-answer-btn::before {
