@@ -13,6 +13,7 @@ import PlayerJoin from "./pages/PlayerJoin";
 import PlayerGame from "./pages/PlayerGame";
 import PlayerStats from "./pages/PlayerStats";
 import Leaderboards from "./pages/Leaderboards";
+import DatabaseDebug from "./pages/DatabaseDebug";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -66,6 +67,11 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/leaderboards" element={<Leaderboards />} />
+            <Route path="/debug" element={
+              <ProtectedRoute allowedRoles={["admin", "host"]}>
+                <DatabaseDebug />
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

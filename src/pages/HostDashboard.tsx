@@ -80,15 +80,26 @@ const HostDashboard = () => {
   const fetchTodaysEvents = async () => {
     try {
       const today = new Date().toISOString().split("T")[0];
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const pastDate = sevenDaysAgo.toISOString().split("T")[0];
 
+      console.log('Fetching events from', pastDate, 'to future');
+
+      // Fetch events from the past week onwards (so you can see recent events and upcoming ones)
       const { data, error } = await supabase
         .from("events")
         .select("*, trivia_sets(title)")
-        .eq("event_date", today)
-        .order("event_time");
+        .gte("event_date", pastDate)
+        .order("event_date", { ascending: true })
+        .order("event_time", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching events:', error);
+        throw error;
+      }
 
+      console.log('Fetched events:', data);
       setEvents(data || []);
     } catch (error: any) {
       toast({
@@ -209,7 +220,7 @@ const HostDashboard = () => {
       <main className="flex-1 overflow-y-auto">
         <div className="container mx-auto px-4 py-4 space-y-8">
           <div>
-            <h2 className="text-2xl font-bold mb-2 text-primary warm-glow">Today's Events</h2>
+            <h2 className="text-2xl font-bold mb-2 text-primary warm-glow">Scheduled Events</h2>
             <p className="text-sm text-muted-foreground">Select an event to start hosting</p>
           </div>
 
@@ -220,7 +231,7 @@ const HostDashboard = () => {
         ) : events.length === 0 ? (
           <Card className="p-8 text-center celtic-frame relative overflow-visible">
             <p className="text-muted-foreground">
-              No events scheduled for today. Contact your admin to schedule events.
+              No events scheduled. Contact your admin to schedule events.
             </p>
           </Card>
         ) : (
