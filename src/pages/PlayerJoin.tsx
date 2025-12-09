@@ -31,6 +31,25 @@ const PlayerJoin = () => {
     }
   }, [user, loading, navigate, toast]);
 
+  // Prefill username from profile
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user?.id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.display_name) {
+          setPlayerName(profile.display_name);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
+
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -186,6 +205,9 @@ const PlayerJoin = () => {
               className="bg-input border-2 border-border focus:border-primary transition-all"
               required
             />
+            <p className="text-xs text-muted-foreground text-center">
+              {playerName ? 'Using your saved name (you can change it)' : 'Enter your display name'}
+            </p>
           </div>
 
           <Button 

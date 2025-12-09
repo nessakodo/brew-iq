@@ -15,7 +15,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export const AITriviaGenerator = () => {
+interface AITriviaGeneratorProps {
+  onTriviaGenerated?: () => void;
+}
+
+export const AITriviaGenerator = ({ onTriviaGenerated }: AITriviaGeneratorProps = {}) => {
   const { toast } = useToast();
   const [generating, setGenerating] = useState(false);
   const [title, setTitle] = useState("");
@@ -57,6 +61,11 @@ export const AITriviaGenerator = () => {
       setTitle("");
       setTheme("");
       setCustomPrompt("");
+
+      // Trigger refresh in parent component
+      if (onTriviaGenerated) {
+        setTimeout(() => onTriviaGenerated(), 500);
+      }
     } catch (error) {
       console.error("Error generating trivia:", error);
       toast({
@@ -70,10 +79,10 @@ export const AITriviaGenerator = () => {
   };
 
   return (
-    <Card className="p-6 border-2 border-primary/20 bg-card/80 backdrop-blur-sm">
+    <Card className="p-6 elegant-card leather-texture">
       <div className="flex items-center gap-2 mb-6">
-        <Sparkles className="h-5 w-5 text-secondary" />
-        <h3 className="text-xl font-bold">AI Trivia Generator</h3>
+        <Sparkles className="h-5 w-5 text-secondary warm-glow" />
+        <h3 className="text-xl font-bold text-primary warm-glow">AI Trivia Generator</h3>
       </div>
 
       <div className="space-y-4">
@@ -127,6 +136,8 @@ export const AITriviaGenerator = () => {
                 <SelectItem value="10">10 Questions</SelectItem>
                 <SelectItem value="15">15 Questions</SelectItem>
                 <SelectItem value="20">20 Questions</SelectItem>
+                <SelectItem value="30">30 Questions</SelectItem>
+                <SelectItem value="60">60 Questions (Full Night)</SelectItem>
               </SelectContent>
             </Select>
           </div>

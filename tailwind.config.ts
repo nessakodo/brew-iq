@@ -68,34 +68,13 @@ export default {
         'glow': 'var(--shadow-glow)',
         'warm': 'var(--shadow-warm)',
         'card': 'var(--shadow-card)',
+        'lantern': '0 0 30px hsl(42 75% 55% / 0.4), 0 0 60px hsl(42 75% 55% / 0.2), 0 4px 20px hsl(0 0% 0% / 0.6)',
+        'moss': '0 0 20px hsl(145 35% 35% / 0.3), inset 0 1px 3px hsl(145 35% 35% / 0.2)',
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-      },
-      keyframes: {
-        "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
-        },
-        "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
-        },
-      },
-      animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-        "warm-pulse": "warm-pulse 3s ease-in-out infinite",
       },
       keyframes: {
         "accordion-down": {
@@ -122,6 +101,49 @@ export default {
             opacity: "0.85",
           },
         },
+        "slide-in-from-bottom-4": {
+          from: {
+            transform: "translateY(1rem)",
+            opacity: "0",
+          },
+          to: {
+            transform: "translateY(0)",
+            opacity: "1",
+          },
+        },
+        "slide-in-from-bottom-2": {
+          from: {
+            transform: "translateY(0.5rem)",
+            opacity: "0",
+          },
+          to: {
+            transform: "translateY(0)",
+            opacity: "1",
+          },
+        },
+        "zoom-in": {
+          from: {
+            transform: "scale(0.8)",
+            opacity: "0",
+          },
+          to: {
+            transform: "scale(1)",
+            opacity: "1",
+          },
+        },
+        "fade-in": {
+          from: {
+            opacity: "0",
+          },
+          to: {
+            opacity: "1",
+          },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        "warm-pulse": "warm-pulse 3s ease-in-out infinite",
       },
     },
   },

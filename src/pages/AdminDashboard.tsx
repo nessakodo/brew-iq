@@ -14,18 +14,23 @@ import { UpcomingEvents } from "@/components/admin/UpcomingEvents";
 const AdminDashboard = () => {
   const { signOut } = useAuth();
   const [activeTab, setActiveTab] = useState("users");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-hero wood-texture">
-      <header className="border-b-2 border-primary/20 bg-card/80 backdrop-blur-sm sticky top-0 z-10 shadow-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+    <div className="h-screen bg-gradient-hero wood-texture flex flex-col overflow-hidden">
+      <header className="border-b-3 border-primary bg-card/80 backdrop-blur-sm z-10 shadow-celtic flex-shrink-0">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
               src="/logo.png"
               alt="BrewIQ Logo"
               className="h-10 w-auto object-contain"
             />
-            <h1 className="text-2xl font-bold text-secondary warm-glow">
+            <h1 className="text-2xl font-bold text-primary warm-glow">
               BrewIQ Admin
             </h1>
           </div>
@@ -36,14 +41,15 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Admin Dashboard</h2>
-          <p className="text-muted-foreground">Manage users, events, and trivia content</p>
-        </div>
+      <main className="flex-1 overflow-y-auto">
+        <div className="container mx-auto px-4 py-4">
+          <div className="mb-4">
+            <h2 className="text-2xl font-bold mb-1">Admin Dashboard</h2>
+            <p className="text-sm text-muted-foreground">Manage users, events, and trivia content</p>
+          </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Players
@@ -71,15 +77,16 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="presets" className="space-y-6">
-            <AITriviaGenerator />
-            <PresetLibrary />
+            <AITriviaGenerator onTriviaGenerated={handleRefresh} />
+            <PresetLibrary key={`presets-${refreshKey}`} />
           </TabsContent>
 
           <TabsContent value="events" className="space-y-6">
-            <EventCreation />
-            <UpcomingEvents />
+            <EventCreation onEventCreated={handleRefresh} />
+            <UpcomingEvents key={`events-${refreshKey}`} />
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        </div>
       </main>
     </div>
   );

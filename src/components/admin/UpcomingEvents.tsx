@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, Edit, Trash2, Mail, Share2, Globe } from "lucide-react";
+import { Calendar, Edit, Trash2, Mail, Share2, Globe, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import {
   Dialog,
@@ -33,6 +33,7 @@ export const UpcomingEvents = () => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
   const fetchEvents = async () => {
+    setLoading(true);
     const { data, error } = await supabase
       .from("events")
       .select("*")
@@ -58,10 +59,13 @@ export const UpcomingEvents = () => {
 
     const channel = supabase
       .channel('events-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, (payload) => {
+        console.log('Events realtime update received:', payload);
         fetchEvents();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Events subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -130,10 +134,20 @@ export const UpcomingEvents = () => {
   };
 
   return (
-    <Card className="p-6 border-2 border-primary/20 bg-card/80 backdrop-blur-sm">
-      <div className="flex items-center gap-2 mb-6">
-        <Calendar className="h-5 w-5 text-secondary" />
-        <h3 className="text-xl font-bold">Upcoming Events</h3>
+    <Card className="p-6 elegant-card leather-texture">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-5 w-5 text-secondary warm-glow" />
+          <h3 className="text-xl font-bold text-primary warm-glow">Upcoming Events</h3>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={fetchEvents}
+          disabled={loading}
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
       </div>
 
       {loading ? (
@@ -143,7 +157,7 @@ export const UpcomingEvents = () => {
       ) : (
         <div className="space-y-4">
           {events.map((event) => (
-            <Card key={event.id} className="p-4 bg-background/50">
+            <Card key={event.id} className="p-4 elegant-card leather-texture hover:border-primary hover:subtle-glow transition-all">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h4 className="font-semibold text-lg">{event.title}</h4>

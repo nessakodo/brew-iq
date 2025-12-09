@@ -26,7 +26,11 @@ interface Host {
   display_name: string | null;
 }
 
-export const EventCreation = () => {
+interface EventCreationProps {
+  onEventCreated?: () => void;
+}
+
+export const EventCreation = ({ onEventCreated }: EventCreationProps = {}) => {
   const [triviaSets, setTriviaSets] = useState<TriviaSet[]>([]);
   const [hosts, setHosts] = useState<Host[]>([]);
   const [loading, setLoading] = useState(false);
@@ -134,7 +138,7 @@ export const EventCreation = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase.from("events").insert({
+      console.log('Creating event with data:', {
         title: event.title.trim(),
         event_date: event.eventDate,
         event_time: event.eventTime,
@@ -145,7 +149,23 @@ export const EventCreation = () => {
         status: "scheduled",
       });
 
-      if (error) throw error;
+      const { data: insertedEvent, error } = await supabase.from("events").insert({
+        title: event.title.trim(),
+        event_date: event.eventDate,
+        event_time: event.eventTime,
+        theme: event.theme.trim() || null,
+        trivia_set_id: event.triviaSetId,
+        assigned_host_id: event.assignedHostId,
+        created_by: user.id,
+        status: "scheduled",
+      }).select();
+
+      if (error) {
+        console.error('Event creation error:', error);
+        throw error;
+      }
+
+      console.log('Event created successfully:', insertedEvent);
 
       toast({
         title: "Event created",
@@ -160,6 +180,11 @@ export const EventCreation = () => {
         triviaSetId: "",
         assignedHostId: "",
       });
+
+      // Trigger refresh in parent component
+      if (onEventCreated) {
+        setTimeout(() => onEventCreated(), 500);
+      }
     } catch (error: any) {
       toast({
         title: "Error creating event",
@@ -172,8 +197,8 @@ export const EventCreation = () => {
   };
 
   return (
-    <Card className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Create New Event</h2>
+    <Card className="p-6 elegant-card leather-texture">
+      <h2 className="text-2xl font-bold mb-6 text-primary warm-glow">Create New Event</h2>
       <form onSubmit={handleCreateEvent} className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-2">

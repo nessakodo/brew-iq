@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { BookOpen, Edit, Trash2, Eye, Sparkles } from "lucide-react";
+import { BookOpen, Edit, Trash2, Eye, Sparkles, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -80,8 +80,8 @@ export const PresetLibrary = () => {
           schema: 'public',
           table: 'trivia_sets'
         },
-        () => {
-          console.log('Trivia set change detected');
+        (payload) => {
+          console.log('Trivia set change detected:', payload);
           fetchSets();
         }
       )
@@ -92,8 +92,8 @@ export const PresetLibrary = () => {
           schema: 'public',
           table: 'questions'
         },
-        () => {
-          console.log('Questions change detected');
+        (payload) => {
+          console.log('Questions change detected:', payload);
           fetchSets();
         }
       )
@@ -196,7 +196,7 @@ export const PresetLibrary = () => {
   const renderSetCards = (sets: TriviaSet[], isCustom: boolean) => (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {sets.map((set) => (
-        <Card key={set.id} className="p-6 hover:shadow-glow transition-all group">
+        <Card key={set.id} className="p-6 elegant-card leather-texture hover:border-primary hover:subtle-glow transition-all group">
           <div className="space-y-4">
             <div>
               <h3 className="text-xl font-bold group-hover:text-secondary transition-colors">
@@ -253,9 +253,19 @@ export const PresetLibrary = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <BookOpen className="h-6 w-6 text-primary" />
-          <h2 className="text-2xl font-bold">Trivia Library</h2>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <BookOpen className="h-6 w-6 text-primary" />
+            <h2 className="text-2xl font-bold">Trivia Library</h2>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchSets}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
 
         <Tabs defaultValue="presets" className="w-full">

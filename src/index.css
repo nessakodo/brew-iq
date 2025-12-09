@@ -8,30 +8,30 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Irish Pub / Bar Theme - warm, cozy, sophisticated */
-    --background: 25 30% 16%;
-    --foreground: 40 20% 95%;
+    /* Dark Irish Pub Theme */
+    --background: 30 15% 8%;
+    --foreground: 40 10% 92%;
 
-    --card: 30 25% 20%;
-    --card-foreground: 40 20% 95%;
+    --card: 30 12% 9%;
+    --card-foreground: 40 10% 92%;
 
-    --popover: 30 25% 18%;
-    --popover-foreground: 40 20% 95%;
+    --popover: 30 12% 10%;
+    --popover-foreground: 40 10% 92%;
 
-    /* Deep forest green primary */
-    --primary: 145 40% 35%;
-    --primary-foreground: 40 20% 95%;
+    /* Dark forest green */
+    --primary: 150 20% 28%;
+    --primary-foreground: 40 10% 92%;
 
-    /* Rich amber/gold secondary */
-    --secondary: 38 85% 55%;
-    --secondary-foreground: 25 30% 8%;
+    /* Vintage brass/gold */
+    --secondary: 40 40% 45%;
+    --secondary-foreground: 30 15% 8%;
 
-    --muted: 30 20% 25%;
-    --muted-foreground: 40 15% 65%;
+    --muted: 30 10% 18%;
+    --muted-foreground: 40 8% 60%;
 
-    /* Warm copper accent */
-    --accent: 25 75% 50%;
-    --accent-foreground: 40 20% 95%;
+    /* Warm bronze accent */
+    --accent: 30 35% 40%;
+    --accent-foreground: 40 10% 92%;
 
     --destructive: 0 70% 50%;
     --destructive-foreground: 40 20% 95%;
@@ -40,19 +40,19 @@ All colors MUST be HSL.
     --input: 30 25% 22%;
     --ring: 145 40% 35%;
 
-    /* Warm rounded corners */
+    /* Rounded corners */
     --radius: 0.5rem;
 
-    /* Warm wood-inspired gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(145 40% 35%), hsl(155 35% 25%));
-    --gradient-accent: linear-gradient(135deg, hsl(38 85% 55%), hsl(25 75% 50%));
-    --gradient-hero: linear-gradient(180deg, hsl(25 30% 16%), hsl(30 25% 12%));
-    --gradient-wood: linear-gradient(90deg, hsl(30 40% 28%), hsl(25 35% 22%), hsl(30 40% 28%));
+    /* Subtle gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(150 20% 28%), hsl(150 18% 22%));
+    --gradient-accent: linear-gradient(135deg, hsl(40 40% 45%), hsl(30 35% 40%));
+    --gradient-hero: linear-gradient(180deg, hsl(30 15% 8%), hsl(30 12% 6%));
+    --gradient-wood: linear-gradient(90deg, hsl(30 20% 15%), hsl(25 18% 10%), hsl(30 20% 15%));
 
-    /* Subtle warm shadows */
-    --shadow-glow: 0 0 30px hsl(38 85% 55% / 0.2), 0 4px 20px hsl(0 0% 0% / 0.3);
-    --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.4), 0 2px 8px hsl(30 40% 20% / 0.2);
-    --shadow-warm: 0 0 20px hsl(25 75% 50% / 0.3);
+    /* Subtle shadows */
+    --shadow-glow: 0 0 20px hsl(40 40% 45% / 0.15), 0 4px 20px hsl(0 0% 0% / 0.5);
+    --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.6), 0 2px 8px hsl(30 20% 10% / 0.3);
+    --shadow-warm: 0 0 15px hsl(30 35% 40% / 0.2);
 
     --sidebar-background: 25 30% 14%;
     --sidebar-foreground: 40 20% 95%;
@@ -88,47 +88,100 @@ All colors MUST be HSL.
   }
 }
 
-/* Bar/Pub themed utilities */
+/* Dark Irish Pub utilities */
 @layer utilities {
+  /* Background with custom wood image */
   .wood-texture {
     position: relative;
-    background: linear-gradient(90deg,
-      hsl(30 40% 28%) 0%,
-      hsl(25 35% 22%) 50%,
-      hsl(30 40% 28%) 100%
-    );
+    background-color: hsl(30 15% 8%);
+    background-image:
+      linear-gradient(
+        rgba(0, 0, 0, 0.4),
+        rgba(0, 0, 0, 0.5)
+      ),
+      url('/wood-background.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
   }
 
-  .wood-texture::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.03) 2px,
-      rgba(0, 0, 0, 0.03) 4px
-    );
-    pointer-events: none;
+  /* Mobile-specific wood background (phones) */
+  @media (max-width: 768px) {
+    .wood-texture {
+      background-image:
+        linear-gradient(
+          rgba(0, 0, 0, 0.4),
+          rgba(0, 0, 0, 0.5)
+        ),
+        url('/wood-background-mobile.jpg');
+      background-attachment: scroll;
+    }
   }
 
   .warm-glow {
-    text-shadow: 0 0 20px hsl(38 85% 55% / 0.3);
+    text-shadow: 0 0 15px hsl(40 40% 45% / 0.15);
   }
 
-  .brass-border {
-    border: 2px solid hsl(38 85% 55%);
-    box-shadow: 
-      inset 0 1px 0 hsl(38 85% 65%),
-      inset 0 -1px 0 hsl(38 85% 45%),
-      0 2px 8px hsl(0 0% 0% / 0.3);
+  .vintage-border {
+    border: 1px solid hsl(40 40% 45% / 0.3);
+    box-shadow: 0 2px 8px hsl(0 0% 0% / 0.4);
+  }
+
+  .subtle-green-accent {
+    border: 1px solid hsl(150 20% 28% / 0.4);
+    box-shadow: 0 2px 8px hsl(0 0% 0% / 0.4);
   }
 
   .leather-texture {
     background:
-      radial-gradient(ellipse at 20% 30%, hsl(30 25% 22%) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 70%, hsl(30 25% 24%) 0%, transparent 50%),
-      hsl(30 25% 20%);
+      radial-gradient(ellipse at 20% 30%, hsl(28 20% 12%) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 70%, hsl(30 18% 10%) 0%, transparent 50%),
+      linear-gradient(135deg, hsl(28 18% 9%), hsl(26 16% 7%));
+  }
+
+  .subtle-glow {
+    box-shadow:
+      0 0 10px hsl(40 40% 45% / 0.1),
+      0 4px 12px hsl(0 0% 0% / 0.5);
+  }
+
+  .elegant-card {
+    background:
+      linear-gradient(135deg, hsl(28 18% 10% / 0.95), hsl(25 15% 8% / 0.95));
+    border: 1px solid hsl(40 40% 45% / 0.25);
+    box-shadow:
+      0 4px 16px hsl(0 0% 0% / 0.6),
+      inset 0 1px 1px hsl(40 40% 45% / 0.1);
+  }
+
+  /* Celtic-style answer button */
+  .celtic-answer-btn {
+    position: relative;
+    border: 2px solid hsl(40 35% 40% / 0.4);
+    box-shadow:
+      0 2px 8px hsl(0 0% 0% / 0.4),
+      inset 0 1px 1px hsl(40 40% 45% / 0.1);
+  }
+
+  .celtic-answer-btn::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border: 1px solid hsl(40 40% 45% / 0.2);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .celtic-answer-btn-correct {
+    border: 2px solid hsl(150 40% 35% / 0.8);
+    background: hsl(150 30% 20% / 0.3);
+    box-shadow:
+      0 0 20px hsl(150 40% 35% / 0.4),
+      0 2px 8px hsl(0 0% 0% / 0.5),
+      inset 0 1px 3px hsl(150 40% 35% / 0.3);
+  }
+
+  .celtic-answer-btn-correct::before {
+    border-color: hsl(150 40% 35% / 0.5);
   }
 }

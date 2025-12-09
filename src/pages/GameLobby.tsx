@@ -16,7 +16,7 @@ const GameLobby = () => {
 
   useEffect(() => {
     fetchGameSession();
-    
+
     // Set up realtime subscription for player joins
     const channel = supabase
       .channel(`game-lobby-${sessionId}`)
@@ -29,13 +29,22 @@ const GameLobby = () => {
           filter: `game_session_id=eq.${sessionId}`
         },
         () => {
+          console.log('New player joined - updating count');
           fetchPlayerCount();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Lobby subscription status:', status);
+      });
+
+    // Poll for player count every 2 seconds as fallback
+    const pollInterval = setInterval(() => {
+      fetchPlayerCount();
+    }, 2000);
 
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, [sessionId]);
 
@@ -163,64 +172,64 @@ const GameLobby = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero wood-texture flex items-center justify-center p-4">
-      <Card className="max-w-4xl w-full p-12 leather-texture border-2 border-primary/40 shadow-card">
-        <div className="text-center space-y-8">
+    <div className="h-screen bg-gradient-hero wood-texture flex items-center justify-center p-4 overflow-hidden">
+      <Card className="max-w-4xl w-full p-6 sm:p-8 leather-texture elegant-card">
+        <div className="text-center space-y-4 sm:space-y-6">
           <div>
             <img
               src="/logo.png"
               alt="BrewIQ Logo"
-              className="mx-auto mb-6 h-24 w-auto object-contain"
+              className="mx-auto mb-3 h-16 sm:h-20 w-auto object-contain"
             />
-            <h1 className="text-5xl font-bold text-secondary warm-glow mb-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-secondary mb-2">
               Game Starting Soon
             </h1>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-base sm:text-lg text-muted-foreground">
               Players can join now with the code below
             </p>
           </div>
 
-          <div className="bg-card/50 border-4 border-secondary p-12 rounded-lg brass-border">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <Hash className="h-12 w-12 text-secondary" />
-              <span className="text-8xl font-bold text-secondary warm-glow tracking-widest">
+          <div className="bg-card/50 vintage-border p-6 sm:p-8 rounded-lg">
+            <div className="flex items-center justify-center gap-2 sm:gap-3">
+              <Hash className="h-8 w-8 sm:h-10 sm:w-10 text-secondary" />
+              <span className="text-5xl sm:text-6xl md:text-7xl font-bold text-secondary tracking-widest">
                 {gameCode}
               </span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 max-w-2xl mx-auto">
-            <div className="bg-card/30 p-6 rounded-lg border border-border">
-              <Clock className="h-8 w-8 text-accent mx-auto mb-3" />
-              <div className="text-5xl font-bold text-foreground mb-2">
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 max-w-2xl mx-auto">
+            <div className="bg-card/30 p-4 sm:p-5 rounded-lg vintage-border">
+              <Clock className="h-6 w-6 sm:h-7 sm:w-7 text-foreground mx-auto mb-2" />
+              <div className="text-3xl sm:text-4xl font-bold text-foreground mb-1">
                 {formatTime(timeRemaining)}
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs sm:text-sm text-foreground/80">
                 Time Remaining
               </div>
             </div>
 
-            <div className="bg-card/30 p-6 rounded-lg border border-border">
-              <Users className="h-8 w-8 text-primary mx-auto mb-3" />
-              <div className="text-5xl font-bold text-foreground mb-2">
+            <div className="bg-card/30 p-4 sm:p-5 rounded-lg subtle-green-accent">
+              <Users className="h-6 w-6 sm:h-7 sm:w-7 text-primary mx-auto mb-2" />
+              <div className="text-3xl sm:text-4xl font-bold text-primary mb-1">
                 {playerCount}
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs sm:text-sm text-muted-foreground">
                 Players Joined
               </div>
             </div>
           </div>
 
-          <div className="pt-8">
+          <div className="pt-4">
             <Button
               onClick={startGame}
               variant="secondary"
               size="lg"
-              className="px-12 py-6 text-xl"
+              className="px-8 sm:px-10 py-4 sm:py-5 text-lg sm:text-xl vintage-border"
             >
               Start Game Now
             </Button>
-            <p className="text-sm text-muted-foreground mt-4">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-3">
               Or game will start automatically when timer reaches zero
             </p>
           </div>
